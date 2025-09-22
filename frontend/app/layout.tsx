@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Orbitron,
+  Smooch_Sans,
+  Tomorrow,
+  VT323,
+} from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -10,6 +17,28 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const vt323 = VT323({
+  weight: "400",
+  variable: "--font-vt323",
+  subsets: ["latin"],
+});
+
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
+  subsets: ["latin"],
+});
+
+const smooth_sans = Smooch_Sans({
+  variable: "--font-smooth-sans",
+  subsets: ["latin"],
+});
+
+const tomorrow = Tomorrow({
+  variable: "--font-tomorrow",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -25,7 +54,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${tomorrow.variable} ${smooth_sans.variable} ${geistMono.variable} ${vt323.variable} ${orbitron.variable} antialiased`}
       >
         {children}
       </body>
