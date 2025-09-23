@@ -18,7 +18,7 @@ export const Input: React.FC<InputProps> = ({
   type = "text",
 }) => (
   <div>
-    <label className="block text-base font-medium text-gray-300 mb-3">
+    <label className="block text-base font-medium text-white/90 mb-3">
       {label}
     </label>
     <div className="relative">

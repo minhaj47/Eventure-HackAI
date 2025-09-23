@@ -120,10 +120,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div
+        className="min-h-screen text-white flex items-center justify-center"
+        style={{
+          backgroundImage: "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
+        }}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <p className="text-white/80">Loading...</p>
         </div>
       </div>
     );
@@ -131,7 +136,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-black text-white font-sans antialiased relative overflow-hidden">
+      <div
+        className="min-h-screen text-white font-sans antialiased relative overflow-hidden"
+        style={{
+          backgroundImage:
+            "linear-gradient(to top, #30a5a5ff 0%, #330867 100%)",
+        }}
+      >
         <Background />
         <Header />
 
@@ -142,7 +153,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <h2 className="text-2xl font-bold text-white mb-4">
                 Ready to Get Started?
               </h2>
-              <p className="text-gray-300 mb-6">
+              <p className="text-white/90 mb-6">
                 Sign in with Google to access your event dashboard and start
                 creating amazing events.
               </p>
@@ -178,7 +189,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-400 bg-clip-text text-transparent mb-6">
                 AI Event Manager
               </h1>
-              <p className="text-xl sm:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-xl sm:text-2xl text-white/90 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Create, manage, and promote your events with the power of
                 artificial intelligence. Generate content, design banners, and
                 engage your audience like never before.
@@ -190,7 +201,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Smart Event Creation
                   </h3>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-white/80 text-sm">
                     AI-powered event planning with automated content generation
                     and scheduling optimization.
                   </p>
@@ -200,7 +211,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     AI Content Generation
                   </h3>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-white/80 text-sm">
                     Generate social media posts, email campaigns, and
                     promotional materials instantly.
                   </p>
@@ -210,7 +221,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <h3 className="text-lg font-semibold text-white mb-2">
                     Audience Engagement
                   </h3>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-white/80 text-sm">
                     Advanced analytics, automated reminders, and classroom
                     management tools.
                   </p>
@@ -227,7 +238,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   // User is signed in - show dashboard
   return (
-    <div className="min-h-screen bg-black text-white font-sans antialiased relative overflow-hidden">
+    <div
+      className="min-h-screen text-white font-sans antialiased relative overflow-hidden"
+      style={{
+        backgroundImage: "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
+      }}
+    >
       <Background />
       <Header onCreateEvent={onCreateEvent} />
 
@@ -235,7 +251,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <div className="relative z-10 border-b border-white/10 bg-black/50 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-12">
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-white/90">
               Welcome back, {session.user?.name}
             </div>
           </div>
@@ -308,7 +324,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 onClick={loadEvents}
                 disabled={refreshing || isLoading}
-                className="inline-flex items-center gap-1 px-3 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-3 py-2 text-white/70 hover:text-white transition-colors disabled:opacity-50"
               >
                 <RefreshCw
                   className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
@@ -334,15 +350,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {isLoading && userEvents.length === 0 ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto mb-4"></div>
-              <p className="text-gray-400">Loading your events...</p>
+              <p className="text-white/80">Loading your events...</p>
             </div>
           ) : userEvents.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-400 mb-2">
+              <h3 className="text-lg font-medium text-white/90 mb-2">
                 No events yet
               </h3>
-              <p className="text-gray-500 mb-6">
+              <p className="text-white/70 mb-6">
                 Create your first event to get started
               </p>
               <button
@@ -383,14 +399,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                             event.eventType.slice(1)}
                         </span>
                       </div>
-                      <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                      <p className="text-white/80 text-sm mb-3 line-clamp-2">
                         {event.description ||
                           `${
                             event.eventType.charAt(0).toUpperCase() +
                             event.eventType.slice(1)
                           } event at ${event.location}`}
                       </p>
-                      <div className="flex items-center gap-6 text-xs text-gray-500">
+                      <div className="flex items-center gap-6 text-xs text-white/70">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {formatEventDate(event.datetime)} at{" "}
@@ -408,7 +424,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                      <button className="p-2 text-white/60 hover:text-red-400 transition-colors">
                         <Trash className="h-4 w-4" />
                       </button>
                     </div>

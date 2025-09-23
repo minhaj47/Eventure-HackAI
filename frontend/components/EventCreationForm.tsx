@@ -41,7 +41,7 @@ export const EventCreationForm: React.FC<EventCreationFormProps> = ({
       />
 
       <div>
-        <label className="block text-base font-medium text-gray-300 mb-3">
+        <label className="block text-base font-medium text-white/90 mb-3">
           Event Type
         </label>
         <select

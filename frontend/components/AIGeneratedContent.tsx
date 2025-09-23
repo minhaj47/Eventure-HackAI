@@ -415,7 +415,7 @@ ${
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto mb-4"></div>
-            <p className="text-gray-400">Generating AI content...</p>
+            <p className="text-white/80">Generating AI content...</p>
           </div>
         </div>
       )}
@@ -461,7 +461,7 @@ ${
               <div className="flex items-center gap-3">
                 {/* Content Length Selection - Minimalistic */}
 
-                <p className="text-sm text-gray-400">size</p>
+                <p className="text-sm text-white/80">size</p>
 
                 <div
                   className={`border-2 px-2 py-2 rounded-xl transition-all duration-300 ${platformContent[selectedPlatform].borderColor} ${platformContent[selectedPlatform].bgColor}`}
@@ -488,14 +488,14 @@ ${
             <div
               className={`border-2 rounded-2xl transition-all duration-300 ${platformContent[selectedPlatform].borderColor} ${platformContent[selectedPlatform].bgColor} relative`}
             >
-              <div className="bg-gray-950/60 rounded-2xl border border-white/20 text-gray-300 font-mono leading-relaxed whitespace-pre-line p-6 pr-16">
+              <div className="bg-gray-950/60 rounded-2xl border border-white/20 text-white/90 font-mono leading-relaxed whitespace-pre-line p-6 pr-16">
                 {platformContent[selectedPlatform].caption}
               </div>
 
               {/* Copy Button */}
               <button
                 onClick={handleCopy}
-                className="absolute top-4 right-4 p-2 bg-gray-800/80 hover:bg-gray-700/80 text-gray-300 hover:text-white border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-200 group"
+                className="absolute top-4 right-4 p-2 bg-gray-800/80 hover:bg-gray-700/80 text-white/80 hover:text-white border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-200 group"
               >
                 <Copy className="h-4 w-4" />
                 <span className="absolute -top-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -506,7 +506,7 @@ ${
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="absolute top-4 right-15 p-2 bg-purple-900/80 hover:bg-purple-700/80 text-gray-300 hover:text-white border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-200 group"
+                className="absolute top-4 right-15 p-2 bg-purple-900/80 hover:bg-purple-700/80 text-white/80 hover:text-white border border-gray-600/30 hover:border-gray-500/50 rounded-lg transition-all duration-200 group"
               >
                 {isRefreshing ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
@@ -531,11 +531,11 @@ ${
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-400">85%</div>
-                <div className="text-sm text-gray-400">Engagement Rate</div>
+                <div className="text-sm text-white/80">Engagement Rate</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-400">2.4K</div>
-                <div className="text-sm text-gray-400">Est. Reach</div>
+                <div className="text-sm text-white/80">Est. Reach</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-400">340</div>

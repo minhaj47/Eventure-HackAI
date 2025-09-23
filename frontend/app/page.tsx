@@ -91,11 +91,16 @@ export default function AIEventManager() {
   // Event details view for existing events
   if (currentView === "eventDetails" && selectedEvent) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white font-sans antialiased relative overflow-hidden">
+      <div
+        className="min-h-screen text-white font-sans antialiased relative overflow-hidden"
+        style={{
+          backgroundImage: "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
+        }}
+      >
         <Background />
         <Header />
 
-        <main className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-8">
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-8">
           {/* Back to Dashboard Button */}
           <div className="flex items-center justify-between">
             <button
@@ -122,32 +127,32 @@ export default function AIEventManager() {
               <h2 className="text-lg font-semibold text-white">
                 {selectedEvent.name}
               </h2>
-              <p className="text-sm text-gray-400">{selectedEvent.eventType}</p>
+              <p className="text-sm text-white/80">{selectedEvent.eventType}</p>
             </div>
           </div>
 
           {/* Event Details */}
-          <div className="bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-2xl shadow-2xl p-8">
+          <div className="bg-gradient-to-br from-gray-900/50 to-black/50 rounded-2xl border border-white/10 p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold text-white mb-2">
                   Event Information
                 </h3>
-                <div className="space-y-3 text-gray-300">
+                <div className="space-y-3 text-white/90">
                   <p>
-                    <span className="text-gray-400">Date:</span>{" "}
+                    <span className="text-white/70">Date:</span>{" "}
                     {new Date(selectedEvent.datetime).toLocaleString()}
                   </p>
                   <p>
-                    <span className="text-gray-400">Location:</span>{" "}
+                    <span className="text-white/70">Location:</span>{" "}
                     {selectedEvent.location}
                   </p>
                   <p>
-                    <span className="text-gray-400">Type:</span>{" "}
+                    <span className="text-white/70">Type:</span>{" "}
                     {selectedEvent.eventType}
                   </p>
                   <p>
-                    <span className="text-gray-400">Status:</span>
+                    <span className="text-white/70">Status:</span>
                     <span
                       className={`ml-2 px-2 py-1 rounded-full text-xs ${
                         selectedEvent.status === "upcoming"
@@ -166,7 +171,7 @@ export default function AIEventManager() {
                 <h3 className="text-lg font-semibold text-white mb-2">
                   Description
                 </h3>
-                <p className="text-gray-300">
+                <p className="text-white/90">
                   {selectedEvent.description || "No description provided."}
                 </p>
               </div>
@@ -174,7 +179,7 @@ export default function AIEventManager() {
           </div>
 
           {/* Event Management Tools - Only show for existing events */}
-          <div className="bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-2xl shadow-2xl p-8">
+          <div className="bg-gradient-to-br from-gray-900/50 to-black/50 rounded-2xl border border-white/10 p-8">
             <div className="flex space-x-4 mb-8">
               {[
                 { label: "Announcement", key: "ai" },
@@ -275,16 +280,21 @@ export default function AIEventManager() {
 
   // Event manager view for creating new events
   return (
-    <div className="min-h-screen bg-gray-900 text-white font-sans antialiased relative overflow-hidden">
+    <div
+      className="min-h-screen text-white font-sans antialiased relative overflow-hidden"
+      style={{
+        backgroundImage: "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
+      }}
+    >
       <Background />
       <Header />
 
-      <main className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-20">
         {/* Back to Dashboard Button */}
         <div className="flex items-center justify-between">
           <button
             onClick={handleBackToLanding}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white border border-gray-600/30 rounded-lg transition-all duration-200"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 hover:bg-gray-700/50 text-white/90 hover:text-white border border-gray-600/30 rounded-lg transition-all duration-200"
           >
             <svg
               className="h-4 w-4"
@@ -308,7 +318,7 @@ export default function AIEventManager() {
                 ? "Event Created Successfully!"
                 : "Create New Event"}
             </h2>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-white/80">
               {eventCreated
                 ? "Generate content and manage your event"
                 : "Fill in the details to get started"}
@@ -318,7 +328,7 @@ export default function AIEventManager() {
 
         {/* Success Message */}
         {eventCreated && (
-          <div className="bg-gradient-to-r from-green-900/20 to-teal-900/20 border border-green-500/30 rounded-2xl p-6">
+          <div className="bg-gradient-to-br from-gray-900/50 to-black/50 rounded-2xl border border-white/10 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 bg-green-500 rounded-full flex items-center justify-center">
@@ -370,7 +380,7 @@ export default function AIEventManager() {
 
         {/* AI Generated Content in Tabs - Show after event creation or form submission */}
         {(showAIOutput || eventCreated) && (
-          <div className="bg-gradient-to-br from-gray-900 via-black to-gray-800 rounded-2xl shadow-2xl p-8">
+          <div className="bg-gradient-to-br from-gray-900/50 to-black/50 rounded-2xl border border-white/10 p-8">
             <div className="flex space-x-4 mb-8">
               {[
                 { label: "Announcement", key: "ai" },
