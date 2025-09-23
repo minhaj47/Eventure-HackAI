@@ -6,5 +6,7 @@ export { ClassroomManagement } from "./ClassroomManagement";
 export { EventCreationForm } from "./EventCreationForm";
 export { Footer } from "./Footer";
 export { Header } from "./Header";
+export { LandingPage } from "./LandingPage";
+export { Providers } from "./Providers";
 export { RegistrationFields } from "./RegistrationFields";
 export { ReminderCard } from "./ReminderCard";

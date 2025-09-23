@@ -7,6 +7,7 @@ import {
   Tomorrow,
   VT323,
 } from "next/font/google";
+import { Providers } from "../components/Providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -56,7 +57,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${tomorrow.variable} ${smooth_sans.variable} ${geistMono.variable} ${vt323.variable} ${orbitron.variable} antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
