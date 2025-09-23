@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Banner, BannerConfig, EventData, RegistrationField } from "../types";
+import { useEvents } from "./useEvents";
 
-export const useEventManager = () => {
+export const useEventManager = (onEventCreated?: () => void) => {
+  const { createEvent } = useEvents();
+
   const [eventData, setEventData] = useState<EventData>({
     name: "",
     datetime: "",
@@ -25,17 +28,46 @@ export const useEventManager = () => {
   ]);
   const [newFieldName, setNewFieldName] = useState("");
 
-  const handleEventSubmit = () => {
+  const handleEventSubmit = async () => {
     if (!eventData.name || !eventData.datetime || !eventData.location) return;
+
     setIsGenerating(true);
-    setTimeout(() => {
+
+    try {
+      // Create the actual event
+      await createEvent({
+        eventName: eventData.name,
+        dateTime: eventData.datetime,
+        location: eventData.location,
+        eventType: eventData.eventType,
+        description: eventData.description,
+      });
+
+      // Show AI output and call success callback
       setShowAIOutput(true);
+      onEventCreated?.();
+    } catch (error) {
+      console.error("Failed to create event:", error);
+      // Still show AI output even if event creation fails for now
+      setShowAIOutput(true);
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleInputChange = (field: keyof EventData, value: string) => {
     setEventData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setEventData({
+      name: "",
+      datetime: "",
+      location: "",
+      description: "",
+      eventType: "conference",
+    });
+    setShowAIOutput(false);
   };
 
   const generateBanners = (config?: BannerConfig) => {
@@ -176,6 +208,7 @@ export const useEventManager = () => {
     newFieldName,
     handleEventSubmit,
     handleInputChange,
+    resetForm,
     generateBanners,
     refreshBanner,
     addRegistrationField,

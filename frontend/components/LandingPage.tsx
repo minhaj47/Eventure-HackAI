@@ -6,12 +6,16 @@ import {
   Clock,
   MapPin,
   Plus,
-  Settings,
+  RefreshCw,
   Sparkles,
+  Star,
+  Trash,
   Users,
 } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { BackendEvent, useEvents } from "../hooks/useEvents";
 import { Background } from "./Background";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
@@ -38,44 +42,81 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onSelectEvent,
 }) => {
   const { data: session, status } = useSession();
-  const [userEvents] = useState<Event[]>([
-    {
-      id: "1",
-      name: "AI & Machine Learning Summit 2024",
-      eventType: "Conference",
-      datetime: "2024-03-15T09:00:00",
-      location: "San Francisco Convention Center",
-      description:
-        "Join industry leaders and experts for a deep dive into the latest AI and ML technologies.",
-      attendeeCount: 247,
-      status: "upcoming",
-      createdAt: "2024-01-10T10:00:00",
-    },
-    {
-      id: "2",
-      name: "Web Development Workshop",
-      eventType: "Workshop",
-      datetime: "2024-02-28T14:00:00",
-      location: "Virtual Event",
-      description:
-        "Hands-on workshop covering modern web development frameworks and best practices.",
-      attendeeCount: 89,
-      status: "upcoming",
-      createdAt: "2024-01-15T16:30:00",
-    },
-    {
-      id: "3",
-      name: "Startup Pitch Competition",
-      eventType: "Competition",
-      datetime: "2024-01-20T18:00:00",
-      location: "Innovation Hub Downtown",
-      description:
-        "Watch emerging startups pitch their innovative ideas to a panel of investors.",
-      attendeeCount: 156,
-      status: "completed",
-      createdAt: "2023-12-05T09:15:00",
-    },
-  ]);
+  const { syncGoogleAuthWithBackend } = useAuth();
+  const { events: backendEvents, isLoading, error, fetchEvents } = useEvents();
+  const [refreshing, setRefreshing] = useState(false);
+  const [authSynced, setAuthSynced] = useState(false);
+
+  // Convert backend events to the format expected by the landing page
+  const userEvents: Event[] = backendEvents.map((event: BackendEvent) => ({
+    id: event._id,
+    name: event.eventName,
+    eventType: event.eventType,
+    datetime: event.dateTime,
+    location: event.location,
+    description: event.description || "",
+    attendeeCount: Math.floor(Math.random() * 200) + 1, // Random for now since backend doesn't track this yet
+    status: new Date(event.dateTime) > new Date() ? "upcoming" : "completed",
+    createdAt: event.createdAt,
+  }));
+
+  // Sync authentication and fetch events when user is authenticated
+  useEffect(() => {
+    const syncAndLoadEvents = async () => {
+      if (session?.user && !authSynced) {
+        try {
+          await syncGoogleAuthWithBackend();
+          setAuthSynced(true);
+          await loadEvents();
+        } catch (error) {
+          console.error("Failed to sync authentication:", error);
+        }
+      } else if (session?.user && authSynced) {
+        await loadEvents();
+      }
+    };
+
+    syncAndLoadEvents();
+  }, [session, authSynced]);
+
+  const loadEvents = async () => {
+    if (!session?.user) {
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      // Ensure backend auth is synced before fetching events
+      if (!authSynced) {
+        await syncGoogleAuthWithBackend();
+        setAuthSynced(true);
+      }
+      await fetchEvents();
+    } catch (error) {
+      console.error("Failed to load events:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const formatEventDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const formatEventTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   if (status === "loading") {
     return (
@@ -202,7 +243,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </div>
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Dashboard Stats
+        {/* Dashboard Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="p-6 bg-gradient-to-br from-blue-900/20 to-cyan-900/20 rounded-2xl border border-blue-500/20">
             <div className="flex items-center justify-between">
@@ -258,21 +299,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Star className="h-8 w-8 text-amber-400" />
             </div>
           </div>
-        </div> */}
+        </div>
         {/* Events List */}
         <div className="bg-gradient-to-br from-gray-900/50 to-black/50 rounded-2xl border border-white/10 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-white">Your Events</h2>
-            <button
-              onClick={onCreateEvent}
-              className="text-cyan-400 hover:text-cyan-300 text-sm font-medium flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              Create New Event
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={loadEvents}
+                disabled={refreshing || isLoading}
+                className="inline-flex items-center gap-1 px-3 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </button>
+              <button
+                onClick={onCreateEvent}
+                className="text-cyan-400 hover:text-cyan-300 text-sm font-medium flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Create New Event
+              </button>
+            </div>
           </div>
 
-          {userEvents.length === 0 ? (
+          {error && (
+            <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
+              {error}
+            </div>
+          )}
+
+          {isLoading && userEvents.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+              <p className="text-gray-400">Loading your events...</p>
+            </div>
+          ) : userEvents.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="h-16 w-16 text-gray-600 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-400 mb-2">
@@ -315,19 +379,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           {event.status}
                         </span>
                         <span className="px-2 py-1 bg-purple-900/30 text-purple-300 border border-purple-500/30 rounded-full text-xs font-medium">
-                          {event.eventType}
+                          {event.eventType.charAt(0).toUpperCase() +
+                            event.eventType.slice(1)}
                         </span>
                       </div>
                       <p className="text-gray-400 text-sm mb-3 line-clamp-2">
-                        {event.description}
+                        {event.description ||
+                          `${
+                            event.eventType.charAt(0).toUpperCase() +
+                            event.eventType.slice(1)
+                          } event at ${event.location}`}
                       </p>
                       <div className="flex items-center gap-6 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(
-                            event.datetime
-                          ).toLocaleDateString()} at{" "}
-                          {new Date(event.datetime).toLocaleTimeString()}
+                          {formatEventDate(event.datetime)} at{" "}
+                          {formatEventTime(event.datetime)}
                         </span>
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
@@ -341,10 +408,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-gray-400 hover:text-white transition-colors">
-                        <Settings className="h-4 w-4" />
+                      <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                        <Trash className="h-4 w-4" />
                       </button>
-                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-cyan-300 transition-colors" />
                     </div>
                   </div>
                 </div>

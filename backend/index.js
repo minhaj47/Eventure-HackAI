@@ -1,11 +1,11 @@
-import express from "express"
+import cookieParser from "cookie-parser"
+import cors from "cors"
 import dotenv from "dotenv"
+import express from "express"
 import connectDB from "./config/db.js"
 import authRouter from "./routes/auth.routes.js"
-import cookieParser from "cookie-parser"
-import userRouter from "./routes/user.routes.js"
 import eventRouter from "./routes/event.routes.js"
-import cors from "cors"
+import userRouter from "./routes/user.routes.js"
 dotenv.config()
 
 const app = express()
@@ -14,7 +14,12 @@ const port = process.env.PORT || 5000
 app.use(
     cors(
         {
-            origin:"http://localhost:5173",
+            origin: [
+                "http://localhost:3000", // Next.js default port
+                "http://localhost:3001", // Next.js alternative port
+                "http://localhost:5173", // Vite default port
+                process.env.FRONTEND_URL // Production frontend URL
+            ].filter(Boolean),
             credentials:true
         }
     )

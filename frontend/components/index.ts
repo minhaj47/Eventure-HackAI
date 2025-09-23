@@ -1,4 +1,5 @@
 export { AIGeneratedContent } from "./AIGeneratedContent";
+export { AuthButton } from "./AuthButton";
 export { AutomatedReminders } from "./AutomatedReminders";
 export { Background } from "./Background";
 export { BannerGenerator } from "./BannerGenerator";

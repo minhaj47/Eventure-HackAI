@@ -13,7 +13,21 @@ const userSchema = new mongoose.Schema(
         },
         password:{
             type:String,
-            required:true
+            required:false // Not required for Google OAuth users
+        },
+        googleId:{
+            type:String,
+            unique:true,
+            sparse:true // Allows null values and ensures uniqueness only for non-null values
+        },
+        image:{
+            type:String,
+            required:false
+        },
+        authProvider:{
+            type:String,
+            enum:['local', 'google'],
+            default:'local'
         },
          events: [
             {

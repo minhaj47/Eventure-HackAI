@@ -9,6 +9,42 @@ const handler = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        try {
+          // Sync with backend when user signs in
+          const response = await fetch(
+            `${
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+            }/api/auth/google`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                googleId: user.id,
+                name: user.name,
+                email: user.email,
+                image: user.image,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            console.error("Failed to sync with backend");
+            return false;
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Backend sync error:", error);
+          return false;
+        }
+      }
+      return true;
+    },
     async session({ session, token }) {
       // Add user ID to session
       if (session.user) {
