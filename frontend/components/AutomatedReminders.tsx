@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import React, { useState } from "react";
+import { sendEventUpdate } from "../services/contentGenerationApi";
 import { Card } from "./ui";
 
 interface AutomatedRemindersProps {
@@ -30,6 +31,14 @@ export const AutomatedReminders: React.FC<AutomatedRemindersProps> = ({
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isSendingAll, setIsSendingAll] = useState(false);
+
+  // Google Sheets integration
+  const [sheetId, setSheetId] = useState("");
+  const [sheetRange, setSheetRange] = useState("Sheet1!A:C");
+  const [isUsingSheets, setIsUsingSheets] = useState(false);
+  const [sendingStatus, setSendingStatus] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   // Mock participants data
   const [participants] = useState([
@@ -69,9 +78,11 @@ export const AutomatedReminders: React.FC<AutomatedRemindersProps> = ({
       registeredAt: "2024-01-19",
     },
   ]);
-  const [sendingStatus, setSendingStatus] = useState<{
-    [key: number]: boolean;
-  }>({});
+
+  // Remove duplicate sendingStatus declaration
+  // const [sendingStatus, setSendingStatus] = useState<{
+  //   [key: number]: boolean;
+  // }>({});
 
   const generateEmailReminder = async () => {
     setIsGeneratingEmail(true);
@@ -131,6 +142,34 @@ Questions? Contact us at: events@company.com`;
     // Simulate sending email
     await new Promise((resolve) => setTimeout(resolve, 2000));
     setSendingStatus((prev) => ({ ...prev, [participantId]: false }));
+  };
+
+  const sendViaGoogleSheets = async () => {
+    if (!sheetId || !generatedEmail) {
+      alert("Please provide a Google Sheet ID and generate an email first.");
+      return;
+    }
+
+    setIsSendingAll(true);
+
+    try {
+      const result = await sendEventUpdate({
+        sheetId: sheetId,
+        eventName: eventData.name,
+        eventMessage: generatedEmail,
+        sheetRange: sheetRange,
+      });
+
+      alert("Event update sent successfully via Google Sheets!");
+      console.log("Send result:", result);
+    } catch (error) {
+      console.error("Failed to send via Google Sheets:", error);
+      alert(
+        "Failed to send event update. Please check your Sheet ID and try again."
+      );
+    } finally {
+      setIsSendingAll(false);
+    }
   };
 
   const sendEmailToAll = async () => {
@@ -233,6 +272,66 @@ Questions? Contact us at: events@company.com`;
               )}
               {isSendingAll ? "Sending to All..." : "Send to All Participants"}
             </button>
+          </div>
+
+          {/* Google Sheets Integration */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <h4 className="text-lg font-semibold text-white">
+                Google Sheets Integration
+              </h4>
+              <button
+                onClick={() => setIsUsingSheets(!isUsingSheets)}
+                className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                  isUsingSheets
+                    ? "bg-green-600/20 text-green-300 border border-green-500/30"
+                    : "bg-gray-600/20 text-gray-400 border border-gray-500/30"
+                }`}
+              >
+                {isUsingSheets ? "Enabled" : "Enable"}
+              </button>
+            </div>
+
+            {isUsingSheets && (
+              <div className="bg-gray-950/40 rounded-xl p-6 border border-white/20 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Google Sheet ID
+                  </label>
+                  <input
+                    type="text"
+                    value={sheetId}
+                    onChange={(e) => setSheetId(e.target.value)}
+                    placeholder="Enter your Google Sheet ID"
+                    className="w-full px-3 py-2 bg-gray-900/60 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Sheet Range (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={sheetRange}
+                    onChange={(e) => setSheetRange(e.target.value)}
+                    placeholder="e.g., Sheet1!A:C"
+                    className="w-full px-3 py-2 bg-gray-900/60 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+                <button
+                  onClick={sendViaGoogleSheets}
+                  disabled={isSendingAll || !generatedEmail || !sheetId}
+                  className="w-full px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  {isSendingAll ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  {isSendingAll ? "Sending..." : "Send via Google Sheets"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Participants List */}

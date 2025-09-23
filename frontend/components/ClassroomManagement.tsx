@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import React, { useState } from "react";
+import { createClassroom } from "../services/contentGenerationApi";
 import { Card } from "./ui";
 
 interface ClassroomManagementProps {
@@ -46,7 +47,51 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
   const [newClassroom, setNewClassroom] = useState({
     name: "",
     description: "",
+    email: "",
   });
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const handleCreateClassroom = async () => {
+    if (!newClassroom.name.trim()) {
+      setCreateError("Classroom name is required");
+      return;
+    }
+
+    setIsCreatingClassroom(true);
+    setCreateError(null);
+
+    try {
+      const result = await createClassroom({
+        className: newClassroom.name,
+        description:
+          newClassroom.description || `Classroom for ${eventData.name}`,
+        email: newClassroom.email,
+      });
+
+      // Add the created classroom to the list (mock structure since API response format isn't specified)
+      const newClassroomItem: Classroom = {
+        id: `classroom_${Date.now()}`,
+        name: newClassroom.name,
+        code: `CLASS${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        description:
+          newClassroom.description || `Classroom for ${eventData.name}`,
+        createdAt: new Date().toISOString(),
+        participantCount: 0,
+        status: "active",
+      };
+
+      setClassrooms((prev) => [newClassroomItem, ...prev]);
+      setNewClassroom({ name: "", description: "", email: "" });
+
+      alert("Classroom created successfully!");
+      console.log("Classroom creation result:", result);
+    } catch (error) {
+      console.error("Failed to create classroom:", error);
+      setCreateError("Failed to create classroom. Please try again.");
+    } finally {
+      setIsCreatingClassroom(false);
+    }
+  };
 
   // Announcement states
   const [announcementPrompt, setAnnouncementPrompt] = useState("");
@@ -59,7 +104,7 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
     return Math.random().toString(36).substr(2, 8).toUpperCase();
   };
 
-  const createClassroom = async () => {
+  const createMockClassroom = async () => {
     if (!newClassroom.name.trim()) return;
 
     setIsCreatingClassroom(true);
@@ -78,7 +123,7 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
 
     setClassrooms((prev) => [...prev, classroom]);
     setSelectedClassroom(classroom);
-    setNewClassroom({ name: "", description: "" });
+    setNewClassroom({ name: "", description: "", email: "" });
     setIsCreatingClassroom(false);
   };
 
@@ -182,6 +227,20 @@ Event: ${eventData.name}`;
                 />
               </div>
               <div>
+                <input
+                  type="email"
+                  value={newClassroom.email}
+                  onChange={(e) =>
+                    setNewClassroom((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  placeholder="Your email (optional)"
+                  className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div>
                 <textarea
                   value={newClassroom.description}
                   onChange={(e) =>
@@ -195,8 +254,13 @@ Event: ${eventData.name}`;
                   className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 resize-none"
                 />
               </div>
+              {createError && (
+                <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+                  {createError}
+                </div>
+              )}
               <button
-                onClick={createClassroom}
+                onClick={handleCreateClassroom}
                 disabled={isCreatingClassroom || !newClassroom.name.trim()}
                 className="w-full px-6 py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2"
               >

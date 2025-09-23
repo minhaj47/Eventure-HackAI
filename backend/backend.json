@@ -1,0 +1,222 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Event Management Assistant",
+    "description": "An intelligent assistant that creates social media posts and poster designs for events",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://cmfwhglptyzy5jxgtky5cwwhv.agent.a.smyth.ai"
+    }
+  ],
+  "paths": {
+    "/api/generate_event_posts": {
+      "post": {
+        "summary": "Generate 3 different social media posts (Facebook, WhatsApp, Twitter) for an event",
+        "operationId": "generate_event_posts",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventName": {
+                    "type": "string"
+                  },
+                  "dateTime": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "eventType": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "googleFormLink": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "eventName",
+                  "dateTime",
+                  "location",
+                  "eventType"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/generate_event_posters": {
+      "post": {
+        "summary": "Generate 5 different poster designs for an event",
+        "operationId": "generate_event_posters",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventName": {
+                    "type": "string"
+                  },
+                  "dateTime": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "eventType": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "googleFormLink": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "eventName",
+                  "dateTime",
+                  "location",
+                  "eventType"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/send_event_update": {
+      "post": {
+        "summary": "Read contacts from Google Sheet (emails, WhatsApp, Telegram) and send event update notifications",
+        "operationId": "send_event_update",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sheetId": {
+                    "type": "string"
+                  },
+                  "eventName": {
+                    "type": "string"
+                  },
+                  "eventMessage": {
+                    "type": "string"
+                  },
+                  "sheetRange": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "sheetId",
+                  "eventName",
+                  "eventMessage"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/create_classroom": {
+      "post": {
+        "summary": "Create a new Google Classroom class with authentication. Provide class name, section (optional), and description (optional)",
+        "operationId": "create_classroom",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "className": {
+                    "type": "string"
+                  },
+                  "section": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "className"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  }
+}

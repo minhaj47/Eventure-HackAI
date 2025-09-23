@@ -1,5 +1,6 @@
 import { Download, Image as ImageIcon, RefreshCw, Share2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { generateEventPosters } from "../services/contentGenerationApi";
 import { Banner, BannerConfig, EventData } from "../types";
 import { ActionButton, Button, Card } from "./ui";
 
@@ -29,9 +30,47 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
     imagery: "icons",
   });
   const [refreshingBanner, setRefreshingBanner] = useState<number | null>(null);
+  const [isLoadingPoster, setIsLoadingPoster] = useState(false);
+  const [posterError, setPosterError] = useState<string | null>(null);
+  const [apiPosters, setApiPosters] = useState<any>(null);
+
+  // Load posters when component mounts or event data changes
+  useEffect(() => {
+    if (eventData.name && eventData.datetime && eventData.location) {
+      loadPosters();
+    }
+  }, [eventData]);
+
+  const loadPosters = async () => {
+    setIsLoadingPoster(true);
+    setPosterError(null);
+
+    try {
+      const posters = await generateEventPosters({
+        eventName: eventData.name,
+        dateTime: eventData.datetime,
+        location: eventData.location,
+        eventType: eventData.eventType,
+        description: eventData.description,
+      });
+
+      setApiPosters(posters);
+    } catch (error) {
+      console.error("Failed to load AI posters:", error);
+      setPosterError("Failed to generate AI posters. Please try again.");
+    } finally {
+      setIsLoadingPoster(false);
+    }
+  };
 
   const handleGenerateBanners = () => {
-    onGenerateBanners(config);
+    if (apiPosters) {
+      // If we have API posters, use them instead of generating new ones
+      onGenerateBanners(config);
+    } else {
+      // Fallback to local generation
+      onGenerateBanners(config);
+    }
   };
 
   const handleRefreshBanner = async (bannerId: number) => {
@@ -42,12 +81,64 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
     }
   };
 
+  const handleRefreshPosters = async () => {
+    await loadPosters();
+  };
+
   const handleConfigChange = (field: keyof BannerConfig, value: string) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <Card title="AI Banner Generation" icon={<ImageIcon className="h-6 w-6" />}>
+      {/* Loading State */}
+      {isLoadingPoster && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">Generating AI posters...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {posterError && (
+        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300">
+          <p>{posterError}</p>
+          <button
+            onClick={handleRefreshPosters}
+            className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* AI-Generated Posters Section */}
+      {apiPosters && !isLoadingPoster && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">
+              AI-Generated Posters
+            </h3>
+            <button
+              onClick={handleRefreshPosters}
+              className="flex items-center gap-1 px-3 py-1 text-gray-400 hover:text-white transition-colors text-sm"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </button>
+          </div>
+          <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
+            <div className="prose prose-invert max-w-none">
+              <pre className="text-sm text-gray-300 whitespace-pre-wrap">
+                {JSON.stringify(apiPosters, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Configuration Panel */}
       <div className="mb-6">
         <div className="bg-gray-950/40 rounded-xl p-6 border border-white/20 mb-6">
