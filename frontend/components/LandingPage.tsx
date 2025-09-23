@@ -435,6 +435,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

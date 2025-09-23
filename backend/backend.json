@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://cmfwhglptyzy5jxgtky5cwwhv.agent.a.smyth.ai"
+      "url": "https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai"
     }
   ],
   "paths": {
@@ -42,12 +42,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "eventName",
-                  "dateTime",
-                  "location",
-                  "eventType"
-                ]
+                "required": ["eventName", "dateTime", "location", "eventType"]
               }
             }
           }
@@ -97,12 +92,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "eventName",
-                  "dateTime",
-                  "location",
-                  "eventType"
-                ]
+                "required": ["eventName", "dateTime", "location", "eventType"]
               }
             }
           }
@@ -146,11 +136,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "sheetId",
-                  "eventName",
-                  "eventMessage"
-                ]
+                "required": ["sheetId", "eventName", "eventMessage"]
               }
             }
           }
@@ -194,9 +180,45 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "className"
-                ]
+                "required": ["className"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/generate_google_form": {
+      "post": {
+        "summary": "Generate a Google Form for event registration with fields for name, WhatsApp number, Telegram number, and email",
+        "operationId": "generate_google_form",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "formTitle": {
+                    "type": "string"
+                  },
+                  "formDescription": {
+                    "type": "string"
+                  }
+                },
+                "required": ["formTitle"]
               }
             }
           }

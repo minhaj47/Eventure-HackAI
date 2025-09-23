@@ -1,5 +1,5 @@
 import { Download, Image as ImageIcon, RefreshCw, Share2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { generateEventPosters } from "../services/contentGenerationApi";
 import { Banner, BannerConfig, EventData } from "../types";
 import { ActionButton, Button, Card } from "./ui";
@@ -33,13 +33,6 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
   const [isLoadingPoster, setIsLoadingPoster] = useState(false);
   const [posterError, setPosterError] = useState<string | null>(null);
   const [apiPosters, setApiPosters] = useState<any>(null);
-
-  // Load posters when component mounts or event data changes
-  useEffect(() => {
-    if (eventData.name && eventData.datetime && eventData.location) {
-      loadPosters();
-    }
-  }, [eventData]);
 
   const loadPosters = async () => {
     setIsLoadingPoster(true);

@@ -6,7 +6,7 @@ import {
   Sparkles,
   Twitter,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   EventPostsResponse,
   generateEventPosts,
@@ -28,7 +28,7 @@ export const AIGeneratedContent: React.FC<AIGeneratedContentProps> = ({
     "short" | "medium" | "long"
   >("medium");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Changed to false since we're not auto-loading
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [apiContent, setApiContent] = useState<EventPostsResponse[]>([]);
@@ -46,13 +46,6 @@ export const AIGeneratedContent: React.FC<AIGeneratedContentProps> = ({
   const [callToAction, setCallToAction] = useState<
     "register" | "learn_more" | "join_us" | "save_date"
   >("register");
-
-  // Load content when component mounts or event data changes
-  useEffect(() => {
-    if (eventData.name && eventData.datetime && eventData.location) {
-      loadContent();
-    }
-  }, [eventData]);
 
   const loadContent = async () => {
     setIsLoading(true);
@@ -433,8 +426,37 @@ ${
         </div>
       )}
 
-      {/* Content - Only show when not loading and no error */}
-      {!isLoading && !error && (
+      {/* Initial State - No content generated yet */}
+      {!isLoading && !error && apiContent.length === 0 && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Sparkles className="h-12 w-12 text-cyan-500 mx-auto mb-4 opacity-50" />
+            <p className="text-white/80 mb-6">
+              Ready to generate AI-powered social media content for your event?
+            </p>
+            <button
+              onClick={loadContent}
+              disabled={
+                !eventData.name || !eventData.datetime || !eventData.location
+              }
+              className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all duration-200 flex items-center gap-2 mx-auto"
+            >
+              <Sparkles className="h-5 w-5" />
+              Generate Content
+            </button>
+            {(!eventData.name ||
+              !eventData.datetime ||
+              !eventData.location) && (
+              <p className="text-yellow-400 text-sm mt-3">
+                Please fill in event name, date/time, and location first
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Content - Only show when content is available */}
+      {!isLoading && !error && apiContent.length > 0 && (
         <div>
           {/* Platform-Specific Content */}
           <div className="mb-2">
