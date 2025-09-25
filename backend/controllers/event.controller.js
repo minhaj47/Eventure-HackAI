@@ -1,6 +1,7 @@
 import Event from "../models/event.model.js"; // adjust the path as needed
 import User from "../models/user.model.js";
 import eventUpdateService from "../services/eventUpdateService.js";
+import googleFormService from "../services/googleFormService.js";
 // Controller to add a new event
 export const addEvent = async (req, res) => {
   try {
@@ -227,6 +228,117 @@ export const sendEventReminder = async (req, res) => {
     res.status(400).json({
       success: false,
       message: error.message || 'Failed to send event reminder'
+    });
+  }
+};
+
+// Controller to generate Google Form for general use
+export const generateGoogleForm = async (req, res) => {
+  try {
+    const { formTitle, formDescription, editorEmail } = req.body;
+
+    // Validation
+    if (!formTitle) {
+      return res.status(400).json({
+        success: false,
+        message: "Form title is required"
+      });
+    }
+
+    // Create Google Form using SmythOS
+    const result = await googleFormService.createGoogleForm({
+      formTitle,
+      formDescription,
+      editorEmail
+    });
+
+    console.log('Google Form creation result:', result);
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Google Form generation error:', error);
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.error || error.message || 'Failed to generate Google Form'
+    });
+  }
+};
+
+// Controller to generate Google Form for a specific event
+export const generateEventRegistrationForm = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { editorEmail } = req.body;
+
+    // Find the event
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found"
+      });
+    }
+
+    // Get user info for organizer email if not provided
+    let organizerEmail = editorEmail;
+    if (!organizerEmail && req.userId) {
+      const user = await User.findById(req.userId);
+      organizerEmail = user?.email;
+    }
+    
+    // If still no organizer email, use a default or skip
+    if (!organizerEmail) {
+      console.warn('No organizer email provided for event registration form');
+    }
+
+    // Create event registration form
+    const result = await googleFormService.createEventRegistrationForm({
+      title: event.eventName,
+      description: event.description,
+      organizerEmail
+    });
+
+    // Optionally update the event with the form URL
+    if (result.success && result.data.formUrl) {
+      await Event.findByIdAndUpdate(eventId, {
+        registrationFormUrl: result.data.formUrl,
+        registrationFormEditUrl: result.data.editFormUrl
+      });
+    }
+
+    res.status(200).json({
+      ...result,
+      event: {
+        id: event._id,
+        name: event.eventName,
+        description: event.description
+      }
+    });
+
+  } catch (error) {
+    console.error('Event registration form generation error:', error);
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.error || error.message || 'Failed to generate event registration form'
+    });
+  }
+};
+
+// Controller to check SmythOS Google Form service configuration
+export const checkGoogleFormConfig = async (req, res) => {
+  try {
+    const validation = googleFormService.validateConfiguration();
+    
+    res.status(200).json({
+      success: true,
+      configuration: validation
+    });
+
+  } catch (error) {
+    console.error('Configuration check error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check configuration'
     });
   }
 };

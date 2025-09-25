@@ -24,6 +24,14 @@ const eventSchema = new mongoose.Schema(
     description: {
       type: String,
       trim: true
+    },
+    registrationFormUrl: {
+      type: String,
+      trim: true
+    },
+    registrationFormEditUrl: {
+      type: String,
+      trim: true
     }
   },
   { timestamps: true }

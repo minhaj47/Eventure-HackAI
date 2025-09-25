@@ -8,11 +8,15 @@ const handler = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         try {
           // Sync with backend when user signs in
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
           const response = await fetch(
             `${
               process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -29,18 +33,25 @@ const handler = NextAuth({
                 email: user.email,
                 image: user.image,
               }),
+              signal: controller.signal,
             }
           );
 
+          clearTimeout(timeoutId);
+
           if (!response.ok) {
-            console.error("Failed to sync with backend");
-            return false;
+            console.error("Failed to sync with backend:", response.status, response.statusText);
+            // Allow sign-in even if backend sync fails
+            console.warn("Proceeding with sign-in despite backend sync failure");
+            return true;
           }
 
           return true;
         } catch (error) {
           console.error("Backend sync error:", error);
-          return false;
+          // Allow sign-in even if backend is unreachable
+          console.warn("Backend unreachable, proceeding with sign-in");
+          return true;
         }
       }
       return true;
@@ -59,9 +70,6 @@ const handler = NextAuth({
       }
       return token;
     },
-  },
-  pages: {
-    signIn: "/auth/signin",
   },
 });
 
