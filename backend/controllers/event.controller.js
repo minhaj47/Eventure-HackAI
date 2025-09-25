@@ -2,6 +2,8 @@ import Event from "../models/event.model.js"; // adjust the path as needed
 import User from "../models/user.model.js";
 import eventUpdateService from "../services/eventUpdateService.js";
 import googleFormService from "../services/googleFormService.js";
+import { extractAllContacts } from "../services/contactExtractionService.js";
+
 // Controller to add a new event
 export const addEvent = async (req, res) => {
   try {
@@ -41,7 +43,6 @@ export const addEvent = async (req, res) => {
 };
 
 
-
 // Controller to get all events for the authenticated user
 export const getUserEvents = async (req, res) => {
   try {
@@ -68,12 +69,40 @@ export const getUserEvents = async (req, res) => {
 
 export const updateEvent = async (req, res) => {
   try {
-    const eventId = req.params.id; // event ID from URL
-    const { eventName, dateTime, location, eventType, description } = req.body;
+    const eventId = req.params.eventId; // event ID from URL
+    const { eventName, dateTime, location, eventType, description, attendeeSheetUrl } = req.body;
+
+    console.log("=== UPDATE EVENT CALLED ===");
+    console.log("Event ID received:", eventId);
+    console.log("EventID type:", typeof eventId);
+    console.log("EventID length:", eventId ? eventId.length : 'undefined');
+    console.log("Request body:", req.body);
+    console.log("Full req.params:", req.params);
+    console.log("Request method:", req.method);
+    console.log("Request URL:", req.url);
+
+    // Check if eventId is a valid MongoDB ObjectId format
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(eventId);
+    console.log("Is valid ObjectId format:", isValidObjectId);
+
+    if (!isValidObjectId) {
+      console.log("Invalid ObjectId format provided:", eventId);
+      return res.status(400).json({ message: "Invalid event ID format" });
+    }
 
     // Find the event by ID
     const event = await Event.findById(eventId);
+    console.log("Found event:", event ? "Yes" : "No");
+    console.log("Event details:", event ? { id: event._id, name: event.eventName } : "None");
+    
     if (!event) {
+      console.log("Event not found for ID:", eventId);
+      
+      // Let's also check if there are any events in the database
+      const allEvents = await Event.find({}).limit(5);
+      console.log("Total events in database:", allEvents.length);
+      console.log("Sample event IDs:", allEvents.map(e => ({ id: e._id.toString(), name: e.eventName })));
+      
       return res.status(404).json({ message: "Event not found" });
     }
 
@@ -83,6 +112,7 @@ export const updateEvent = async (req, res) => {
     if (location) event.location = location;
     if (eventType) event.eventType = eventType;
     if (description !== undefined) event.description = description;
+    if (attendeeSheetUrl !== undefined) event.attendeeSheetUrl = attendeeSheetUrl;
 
     // Save the updated event
     const updatedEvent = await event.save();
@@ -367,6 +397,63 @@ export const checkGoogleFormConfig = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to check configuration'
+    });
+  }
+};
+
+// Controller to fetch participants from event's attendee sheet
+export const fetchEventParticipants = async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+    
+    if (!event) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Event not found" 
+      });
+    }
+
+    if (!event.attendeeSheetUrl) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "No attendee sheet connected to this event" 
+      });
+    }
+
+    // Extract contacts from the Google Sheet using SmythOS API
+    const rawResponse = await extractAllContacts(event.attendeeSheetUrl);
+    
+    // Parse the SmythOS response structure: result.Output.contacts.contacts[]
+    let participants = [];
+    
+    if (rawResponse && rawResponse.result && rawResponse.result.Output && 
+        rawResponse.result.Output.contacts && rawResponse.result.Output.contacts.contacts) {
+      
+      const contactsArray = rawResponse.result.Output.contacts.contacts;
+      
+      participants = contactsArray.map((contact, index) => ({
+        id: index + 1,
+        name: contact.name || contact.Name || `Participant ${index + 1}`,
+        email: contact.email || contact.Email || '',
+        status: "confirmed",
+        registeredAt: new Date().toISOString().split('T')[0]
+      }));
+    }
+
+    res.status(200).json({
+      success: true,
+      participants: participants
+    });
+
+  } catch (error) {
+    console.error("Failed to fetch participants:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to fetch participants from Google Sheet",
+      error: error.message 
     });
   }
 };

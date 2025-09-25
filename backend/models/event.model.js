@@ -32,6 +32,10 @@ const eventSchema = new mongoose.Schema(
     registrationFormEditUrl: {
       type: String,
       trim: true
+    },
+    attendeeSheetUrl: {
+      type: String,
+      trim: true
     }
   },
   { timestamps: true }

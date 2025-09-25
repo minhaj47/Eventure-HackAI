@@ -1,14 +1,15 @@
 import express from "express"
-import { 
-  addEvent,
-  getUserEvents,
-  updateEvent,
-  sendEventUpdate,
-  sendBulkEventNotification,
-  sendEventReminder,
-  generateGoogleForm,
-  generateEventRegistrationForm,
-  checkGoogleFormConfig
+import {
+    addEvent,
+    checkGoogleFormConfig,
+    fetchEventParticipants,
+    generateEventRegistrationForm,
+    generateGoogleForm,
+    getUserEvents,
+    sendBulkEventNotification,
+    sendEventReminder,
+    sendEventUpdate,
+    updateEvent
 } from "../controllers/event.controller.js"
 import isAuth from "../middlewares/isAuth.js"
 
@@ -17,8 +18,9 @@ const eventRouter = express.Router()
 
 // Existing routes
 eventRouter.get("/all",isAuth,getUserEvents)
-eventRouter.put("/update/:eventId",isAuth,updateEvent)
+eventRouter.put("/update/:eventId",isAuth,updateEvent) // Restore auth
 eventRouter.post("/add",isAuth,addEvent)
+eventRouter.get("/participants/:eventId",isAuth,fetchEventParticipants)
 
 // Event update routes (no authentication required)
 eventRouter.post("/send-update", sendEventUpdate)
