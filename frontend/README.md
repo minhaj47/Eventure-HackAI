@@ -1,17 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Event Manager Frontend
+
+This is a [Next.js](https://nextjs.org) application for the AI-powered Event Management system, integrated with SmythOS APIs for intelligent content generation.
+
+## Features
+
+- **Event Creation & Management**: Create and manage events with comprehensive details
+- **AI-Powered Email Generation**: Generate professional emails using SmythOS AI
+- **Banner Generation**: Create event banners with AI assistance
+- **Registration Management**: Handle attendee registration and form generation
+- **Automated Reminders**: Send intelligent reminders to participants
+- **Google Sheets Integration**: Sync with Google Sheets for bulk operations
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- Backend server running on port 5000
+- Environment variables configured
+
+### Installation
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Configure environment variables:
+
+```bash
+cp .env.local.example .env.local
+# Edit .env.local with your configuration
+```
+
+3. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

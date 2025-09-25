@@ -4,6 +4,7 @@ export { AutomatedReminders } from "./AutomatedReminders";
 export { Background } from "./Background";
 export { BannerGenerator } from "./BannerGenerator";
 export { ClassroomManagement } from "./ClassroomManagement";
+export { EmailBodyGenerator } from "./EmailBodyGenerator";
 export { EventCreationForm } from "./EventCreationForm";
 export { Footer } from "./Footer";
 export { GoogleFormGenerator } from "./GoogleFormGenerator";

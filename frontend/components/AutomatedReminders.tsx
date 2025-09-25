@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import React, { useState } from "react";
+import { generateEmailBody } from "../services/apiService";
 import { sendEventUpdate } from "../services/contentGenerationApi";
 import { Card } from "./ui";
 
@@ -31,6 +32,10 @@ export const AutomatedReminders: React.FC<AutomatedRemindersProps> = ({
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [isSendingAll, setIsSendingAll] = useState(false);
+
+  // Regeneration states
+  const [regenerationSuggestions, setRegenerationSuggestions] = useState("");
+  const [showRegenerateOptions, setShowRegenerateOptions] = useState(false);
 
   // Google Sheets integration
   const [sheetId, setSheetId] = useState("");
@@ -86,18 +91,46 @@ export const AutomatedReminders: React.FC<AutomatedRemindersProps> = ({
 
   const generateEmailReminder = async () => {
     setIsGeneratingEmail(true);
-    // Simulate AI email generation
-    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    const emailTemplate = `Subject: ${
-      emailPrompt || `Reminder: ${eventData.name} is Coming Up!`
-    }
+    try {
+      // Prepare key data for email generation
+      const keyData = `Event: ${eventData.name}
+Date: ${new Date(eventData.datetime).toLocaleDateString()}
+Time: ${new Date(eventData.datetime).toLocaleTimeString()}
+Location: ${eventData.location}
+Type: ${eventData.eventType}
+Description: ${eventData.description || ""}`;
+
+      // Call backend API to generate email
+      const generatedEmailContent = await generateEmailBody({
+        purpose:
+          emailPrompt ||
+          `Reminder for ${eventData.eventType}: ${eventData.name}`,
+        recipientName: "[Participant Name]", // Will be replaced with actual names when sending
+        senderName: "Event Team", // You can make this configurable
+        keyData: keyData,
+        tone: "professional",
+        callToAction:
+          "Please confirm your attendance by replying to this email",
+        suggestions:
+          emailPrompt || "Include event details and any special instructions",
+      });
+
+      setGeneratedEmail(generatedEmailContent);
+      setIsEditingEmail(true);
+    } catch (error) {
+      console.error("Failed to generate email:", error);
+
+      // Fallback to template if API fails
+      const emailTemplate = `Subject: ${
+        emailPrompt || `Reminder: ${eventData.name} is Coming Up!`
+      }
 
 Dear [Participant Name],
 
 This is a friendly reminder about the upcoming ${
-      eventData.eventType || "event"
-    }: ${eventData.name}.
+        eventData.eventType || "event"
+      }: ${eventData.name}.
 
 Event Details:
 📅 Date: ${new Date(eventData.datetime).toLocaleDateString()}
@@ -132,9 +165,11 @@ The Event Team
 Need to cancel? Click here: [Unsubscribe Link]
 Questions? Contact us at: events@company.com`;
 
-    setGeneratedEmail(emailTemplate);
-    setIsGeneratingEmail(false);
-    setIsEditingEmail(true);
+      setGeneratedEmail(emailTemplate);
+      setIsEditingEmail(true);
+    } finally {
+      setIsGeneratingEmail(false);
+    }
   };
 
   const sendEmailToParticipant = async (participantId: number) => {
@@ -178,6 +213,52 @@ Questions? Contact us at: events@company.com`;
     await new Promise((resolve) => setTimeout(resolve, 3000));
     setIsSendingAll(false);
   };
+
+  const regenerateEmail = async () => {
+    if (!regenerationSuggestions.trim()) {
+      alert("Please provide suggestions for regeneration");
+      return;
+    }
+
+    setIsGeneratingEmail(true);
+
+    try {
+      // Prepare key data for email generation
+      const keyData = `Event: ${eventData.name}
+Date: ${new Date(eventData.datetime).toLocaleDateString()}
+Time: ${new Date(eventData.datetime).toLocaleTimeString()}
+Location: ${eventData.location}
+Type: ${eventData.eventType}
+Description: ${eventData.description || ""}
+
+Previous email was generated. User feedback: ${regenerationSuggestions}`;
+
+      // Call backend API to regenerate email with suggestions
+      const generatedEmailContent = await generateEmailBody({
+        purpose: `Regenerate email for ${eventData.eventType}: ${eventData.name} with improvements based on user feedback`,
+        recipientName: "[Participant Name]",
+        senderName: "Event Team",
+        keyData: keyData,
+        tone: "professional",
+        callToAction:
+          "Please confirm your attendance by replying to this email",
+        suggestions: `Original request: ${
+          emailPrompt || "Event reminder email"
+        }. User feedback for improvement: ${regenerationSuggestions}`,
+      });
+
+      setGeneratedEmail(generatedEmailContent);
+      setIsEditingEmail(true);
+      setShowRegenerateOptions(false);
+      setRegenerationSuggestions("");
+    } catch (error) {
+      console.error("Failed to regenerate email:", error);
+      alert("Failed to regenerate email. Please try again.");
+    } finally {
+      setIsGeneratingEmail(false);
+    }
+  };
+
   return (
     <Card title="Automated Reminders" icon={<Bell className="h-6 w-6" />}>
       {/* Enhanced Email Reminder Section */}
@@ -185,20 +266,23 @@ Questions? Contact us at: events@company.com`;
         {/* Email Generation */}
         <div className="p-6 bg-gradient-to-r from-indigo-900/20 to-purple-900/20 rounded-2xl border border-indigo-500/20">
           <div className="flex items-center justify-between mb-6">
-            <h4 className="text-lgb font-tomorrow text-white flex items-center gap-2">
+            <h4 className="text-lg font-tomorrow text-white flex items-center gap-2">
               <Mail className="h-5 w-5 text-indigo-400" />
-              Generate Mail
+              Generate Mail (AI Powered)
             </h4>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-gray-400" />
               <span className="text-sm text-gray-400">
-                Auto-reminder system
+                SmythOS AI-powered generation
               </span>
             </div>
           </div>
 
           {/* Email Prompt Input */}
           <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Custom Instructions (Optional)
+            </label>
             <div className="flex gap-3">
               <input
                 type="text"
@@ -247,6 +331,97 @@ Questions? Contact us at: events@company.com`;
               ) : (
                 <div className="bg-gray-900/50 border border-gray-600/30 rounded-xl p-4 text-gray-300 font-mono text-sm leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto">
                   {generatedEmail}
+                </div>
+              )}
+
+              {/* Regenerate Options */}
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={() =>
+                    setShowRegenerateOptions(!showRegenerateOptions)
+                  }
+                  className="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-300 border border-yellow-500/30 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Regenerate with Suggestions
+                </button>
+
+                <button
+                  onClick={() => navigator.clipboard.writeText(generatedEmail)}
+                  className="px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 border border-gray-500/30 rounded-lg transition-all duration-200 text-sm"
+                >
+                  Copy Email
+                </button>
+              </div>
+
+              {/* Regeneration Suggestions Input */}
+              {showRegenerateOptions && (
+                <div className="mt-4 p-4 bg-yellow-900/10 border border-yellow-500/20 rounded-xl">
+                  <label className="block text-sm font-medium text-yellow-300 mb-2">
+                    What would you like to improve or change?
+                  </label>
+                  <div className="flex gap-3">
+                    <textarea
+                      value={regenerationSuggestions}
+                      onChange={(e) =>
+                        setRegenerationSuggestions(e.target.value)
+                      }
+                      placeholder="e.g., 'Make it more formal', 'Add RSVP deadline', 'Include dress code', 'Make it shorter'"
+                      rows={3}
+                      className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500/50 focus:ring-2 focus:ring-yellow-500/20 resize-none"
+                    />
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={regenerateEmail}
+                        disabled={
+                          isGeneratingEmail || !regenerationSuggestions.trim()
+                        }
+                        className="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-300 border border-yellow-500/30 rounded-lg disabled:opacity-50 transition-all duration-200 flex items-center gap-2 text-sm whitespace-nowrap"
+                      >
+                        {isGeneratingEmail ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                        {isGeneratingEmail ? "Regenerating..." : "Regenerate"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowRegenerateOptions(false);
+                          setRegenerationSuggestions("");
+                        }}
+                        className="px-4 py-2 bg-gray-600/20 hover:bg-gray-600/30 text-gray-300 border border-gray-500/30 rounded-lg transition-all duration-200 text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quick Suggestion Buttons */}
+                  <div className="mt-3">
+                    <div className="text-xs text-yellow-400 mb-2">
+                      Quick suggestions:
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "Make it more formal",
+                        "Make it more casual",
+                        "Add RSVP deadline",
+                        "Include dress code",
+                        "Make it shorter",
+                        "Add parking info",
+                        "Include agenda",
+                      ].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => setRegenerationSuggestions(suggestion)}
+                          className="px-3 py-1 bg-yellow-600/10 hover:bg-yellow-600/20 text-yellow-300 border border-yellow-500/20 rounded-md text-xs transition-all duration-200"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

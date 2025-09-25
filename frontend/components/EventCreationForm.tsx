@@ -20,16 +20,16 @@ export const EventCreationForm: React.FC<EventCreationFormProps> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <Input
         label="Event Name"
-        value={eventData.name}
-        onChange={(v) => onInputChange("name", v)}
+        value={eventData.eventName}
+        onChange={(v) => onInputChange("eventName", v)}
         placeholder="e.g., AI Conference 2025"
       />
 
       <Input
         label="Date & Time"
         type="datetime-local"
-        value={eventData.datetime}
-        onChange={(v) => onInputChange("datetime", v)}
+        value={eventData.dateTime}
+        onChange={(v) => onInputChange("dateTime", v)}
       />
 
       <Input

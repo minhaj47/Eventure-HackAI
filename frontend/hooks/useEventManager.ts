@@ -6,8 +6,8 @@ export const useEventManager = (onEventCreated?: () => void) => {
   const { createEvent } = useEvents();
 
   const [eventData, setEventData] = useState<EventData>({
-    name: "",
-    datetime: "",
+    eventName: "",
+    dateTime: "",
     location: "",
     description: "",
     eventType: "conference",
@@ -29,15 +29,16 @@ export const useEventManager = (onEventCreated?: () => void) => {
   const [newFieldName, setNewFieldName] = useState("");
 
   const handleEventSubmit = async () => {
-    if (!eventData.name || !eventData.datetime || !eventData.location) return;
+    if (!eventData.eventName || !eventData.dateTime || !eventData.location)
+      return;
 
     setIsGenerating(true);
 
     try {
       // Create the actual event
       await createEvent({
-        eventName: eventData.name,
-        dateTime: eventData.datetime,
+        eventName: eventData.eventName,
+        dateTime: eventData.dateTime,
         location: eventData.location,
         eventType: eventData.eventType,
         description: eventData.description,
@@ -61,8 +62,8 @@ export const useEventManager = (onEventCreated?: () => void) => {
 
   const resetForm = () => {
     setEventData({
-      name: "",
-      datetime: "",
+      eventName: "",
+      dateTime: "",
       location: "",
       description: "",
       eventType: "conference",

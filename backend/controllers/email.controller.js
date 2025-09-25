@@ -45,9 +45,9 @@ export const generateEmailBody = async (req, res) => {
       timeout: 30000 // 30 seconds timeout
     });
 
-    // Return the generated email body as plain text
+    // Return the SmythOS response as JSON
     console.log("SmythOS Response:", result.data);
-    return res.status(200).set('Content-Type', 'text/plain').send(result.data);
+    return res.status(200).json(result.data);
 
   } catch (error) {
     console.error("Email generation error:", error.message);
