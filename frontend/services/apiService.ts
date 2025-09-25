@@ -1,5 +1,45 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+export interface Contact {
+  name: string;
+  email: string;
+}
+
+export interface ContactExtractionResponse {
+  id: string;
+  name: string;
+  result: {
+    Output: {
+      contacts: {
+        contacts: Contact[];
+      };
+    };
+  };
+}
+
+export const extractContacts = async (sheetLink: string): Promise<ContactExtractionResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/extract-contacts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sheetLink })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to extract contacts: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error extracting contacts:', error);
+    throw error;
+  }
+};
+
 export interface EmailGenerationRequest {
   purpose: string;
   recipientName?: string;
