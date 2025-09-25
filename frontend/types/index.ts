@@ -1,4 +1,13 @@
 export interface EventData {
+  eventName: string;
+  dateTime: string;
+  location: string;
+  description: string;
+  eventType: PurposeType;
+}
+
+// Legacy interface for compatibility
+export interface LegacyEventData {
   name: string;
   datetime: string;
   location: string;

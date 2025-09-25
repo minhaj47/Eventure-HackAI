@@ -6,6 +6,7 @@ export { BannerGenerator } from "./BannerGenerator";
 export { ClassroomManagement } from "./ClassroomManagement";
 export { EventCreationForm } from "./EventCreationForm";
 export { Footer } from "./Footer";
+export { GoogleFormGenerator } from "./GoogleFormGenerator";
 export { Header } from "./Header";
 export { LandingPage } from "./LandingPage";
 export { Providers } from "./Providers";

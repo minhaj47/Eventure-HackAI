@@ -245,6 +245,14 @@ export default function AIEventManager() {
                   onAddField={addRegistrationField}
                   onRemoveField={removeRegistrationField}
                   onToggleRequired={toggleFieldRequired}
+                  eventData={{
+                    eventName: selectedEvent.name,
+                    dateTime: selectedEvent.datetime,
+                    location: selectedEvent.location,
+                    eventType: selectedEvent.eventType as any,
+                    description: selectedEvent.description,
+                  }}
+                  eventId={selectedEvent.id}
                 />
               )}
               {activeTab === "reminders" && (
@@ -351,7 +359,8 @@ export default function AIEventManager() {
                     Event Created Successfully!
                   </h3>
                   <p className="text-green-400/80">
-                    Your event "{eventData.name}" has been created and saved.
+                    Your event "{eventData.eventName}" has been created and
+                    saved.
                   </p>
                 </div>
               </div>
@@ -432,13 +441,30 @@ export default function AIEventManager() {
                   onAddField={addRegistrationField}
                   onRemoveField={removeRegistrationField}
                   onToggleRequired={toggleFieldRequired}
+                  eventData={eventData}
                 />
               )}
               {activeTab === "reminders" && (
-                <AutomatedReminders eventData={eventData} />
+                <AutomatedReminders
+                  eventData={{
+                    name: eventData.eventName,
+                    datetime: eventData.dateTime,
+                    location: eventData.location,
+                    eventType: eventData.eventType as any,
+                    description: eventData.description,
+                  }}
+                />
               )}
               {activeTab === "classroom" && (
-                <ClassroomManagement eventData={eventData} />
+                <ClassroomManagement
+                  eventData={{
+                    name: eventData.eventName,
+                    datetime: eventData.dateTime,
+                    location: eventData.location,
+                    eventType: eventData.eventType as any,
+                    description: eventData.description,
+                  }}
+                />
               )}
             </div>
           </div>
