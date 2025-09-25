@@ -11,11 +11,11 @@ import {
   EventPostsResponse,
   generateEventPosts,
 } from "../services/contentGenerationApi";
-import { EventData } from "../types";
+import { LegacyEventData } from "../types";
 import { Card } from "./ui";
 
 interface AIGeneratedContentProps {
-  eventData: EventData;
+  eventData: LegacyEventData;
 }
 
 export const AIGeneratedContent: React.FC<AIGeneratedContentProps> = ({

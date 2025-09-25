@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export interface BackendEvent {
   _id: string;
@@ -9,6 +9,8 @@ export interface BackendEvent {
   location: string;
   eventType: string;
   description?: string;
+  registrationFormUrl?: string;
+  registrationFormEditUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -268,7 +268,7 @@ export const generateGoogleForm = async (req, res) => {
 export const generateEventRegistrationForm = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const { editorEmail } = req.body;
+    const { editorEmail, forceRegenerate } = req.body;
 
     // Find the event
     const event = await Event.findById(eventId);
@@ -276,6 +276,27 @@ export const generateEventRegistrationForm = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Event not found"
+      });
+    }
+
+    // Check if form already exists and forceRegenerate is not true
+    if (event.registrationFormUrl && !forceRegenerate) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          formTitle: `${event.eventName} - Registration Form`,
+          formUrl: event.registrationFormUrl,
+          editFormUrl: event.registrationFormEditUrl,
+          formId: '', // We don't store formId separately
+          instructions: 'Form already exists for this event'
+        },
+        message: 'Form already exists for this event',
+        isExisting: true,
+        event: {
+          id: event._id,
+          name: event.eventName,
+          description: event.description
+        }
       });
     }
 
@@ -298,16 +319,23 @@ export const generateEventRegistrationForm = async (req, res) => {
       organizerEmail
     });
 
-    // Optionally update the event with the form URL
+    // Update the event with the form URL
     if (result.success && result.data.formUrl) {
-      await Event.findByIdAndUpdate(eventId, {
+      const updatedEvent = await Event.findByIdAndUpdate(eventId, {
         registrationFormUrl: result.data.formUrl,
-        registrationFormEditUrl: result.data.editFormUrl
+        registrationFormEditUrl: result.data.editFormUrl || result.data.formUrl
+      }, { new: true });
+      
+      console.log('Updated event with form URLs:', {
+        eventId,
+        formUrl: result.data.formUrl,
+        editFormUrl: result.data.editFormUrl
       });
     }
 
     res.status(200).json({
       ...result,
+      isExisting: false,
       event: {
         id: event._id,
         name: event.eventName,

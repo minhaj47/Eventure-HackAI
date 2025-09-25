@@ -24,6 +24,8 @@ interface Event {
   attendeeCount: number;
   status: "upcoming" | "ongoing" | "completed";
   createdAt: string;
+  registrationFormUrl?: string;
+  registrationFormEditUrl?: string;
 }
 
 export default function AIEventManager() {
@@ -251,6 +253,9 @@ export default function AIEventManager() {
                     location: selectedEvent.location,
                     eventType: selectedEvent.eventType as any,
                     description: selectedEvent.description,
+                    registrationFormUrl: selectedEvent.registrationFormUrl,
+                    registrationFormEditUrl:
+                      selectedEvent.registrationFormEditUrl,
                   }}
                   eventId={selectedEvent.id}
                 />
@@ -422,11 +427,25 @@ export default function AIEventManager() {
             </div>
             <div className="mt-4">
               {activeTab === "ai" && (
-                <AIGeneratedContent eventData={eventData} />
+                <AIGeneratedContent
+                  eventData={{
+                    name: eventData.eventName,
+                    datetime: eventData.dateTime,
+                    location: eventData.location,
+                    eventType: eventData.eventType as any,
+                    description: eventData.description,
+                  }}
+                />
               )}
               {activeTab === "banner" && (
                 <BannerGenerator
-                  eventData={eventData}
+                  eventData={{
+                    name: eventData.eventName,
+                    datetime: eventData.dateTime,
+                    location: eventData.location,
+                    eventType: eventData.eventType as any,
+                    description: eventData.description,
+                  }}
                   generatedBanners={generatedBanners}
                   isGeneratingBanner={isGeneratingBanner}
                   onGenerateBanners={generateBanners}

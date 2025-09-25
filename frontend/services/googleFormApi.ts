@@ -1,6 +1,13 @@
 /**
  * Google Form Generation API Service
- * Frontend service for interacting with SmythOS Google Form generation endpoints
+ * Frontend service for interacting witexport const generateGoogleForm = async (
+  formData: GoogleFormRequest
+): Promise<GoogleFormResponse> => {
+  try {
+    const response = await makeApiRequest('/api/event/generate-google-form', {
+      method: 'POST',
+      body: JSON.stringify(formData),
+    });S Google Form generation endpoints
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -13,6 +20,7 @@ export interface GoogleFormRequest {
 
 export interface EventRegistrationFormRequest {
   editorEmail?: string;
+  forceRegenerate?: boolean;
 }
 
 export interface GoogleFormResponse {
@@ -33,6 +41,7 @@ export interface EventRegistrationFormResponse extends GoogleFormResponse {
     name: string;
     description: string;
   };
+  isExisting?: boolean;
 }
 
 export interface ConfigurationResponse {

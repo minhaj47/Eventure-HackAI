@@ -5,12 +5,16 @@ import { Button } from "./ui/Button";
 interface GoogleFormGeneratorProps {
   eventId?: string;
   eventName?: string;
+  existingFormUrl?: string;
+  existingEditUrl?: string;
   onFormGenerated?: (formData: any) => void;
 }
 
 export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
   eventId,
   eventName,
+  existingFormUrl,
+  existingEditUrl,
   onFormGenerated,
 }) => {
   const [formTitle, setFormTitle] = useState(
@@ -19,9 +23,11 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
   const [formDescription, setFormDescription] = useState("");
   const [editorEmail, setEditorEmail] = useState("");
   const [generatedForm, setGeneratedForm] = useState<any>(null);
-
   const { generateForm, generateEventForm, isLoading, error } =
     useGoogleFormGeneration();
+
+  // Check if form already exists
+  const hasExistingForm = existingFormUrl && existingFormUrl.trim() !== "";
 
   const handleGenerateForm = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,94 +56,54 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    // You might want to show a toast notification here
-  };
+  // Show existing form if available - no generation options when form exists
+  if (hasExistingForm || generatedForm?.success) {
+    const formData = generatedForm?.data || {
+      formTitle: eventName
+        ? `${eventName} - Registration Form`
+        : "Registration Form",
+      formUrl: existingFormUrl,
+      editFormUrl: existingEditUrl,
+      instructions: generatedForm?.isExisting
+        ? "Form already exists for this event"
+        : "Registration form is ready",
+    };
 
-  if (generatedForm?.success) {
     return (
       <div className="bg-green-900/20 border border-green-400/20 rounded-xl p-6">
         <h3 className="text-lg font-semibold text-green-300 mb-4">
-          ✅ Google Form Created Successfully!
+          📋 Registration Form Available
         </h3>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-green-200 mb-1">
-              Form Title:
-            </label>
-            <p className="text-white">{generatedForm.data.formTitle}</p>
+            <p className="text-white font-medium">{formData.formTitle}</p>
+            <p className="text-green-200/80 text-sm mt-1">
+              Ready for attendee registration
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-green-200 mb-1">
-              Public Form URL:
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={generatedForm.data.formUrl}
-                readOnly
-                className="flex-1 px-3 py-2 border border-white/20 rounded-md bg-gray-950/60 text-white text-sm"
-              />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={() => window.open(formData.formUrl, "_blank")}
+              variant="primary"
+              label="📝 Open Registration Form"
+            />
+            {formData.editFormUrl && (
               <Button
-                onClick={() => copyToClipboard(generatedForm.data.formUrl)}
+                onClick={() => window.open(formData.editFormUrl, "_blank")}
                 variant="outline"
-                label="Copy"
+                label="✏️ Edit Form"
               />
-              <Button
-                onClick={() =>
-                  window.open(generatedForm.data.formUrl, "_blank")
-                }
-                variant="outline"
-                label="Open"
-              />
-            </div>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-green-200 mb-1">
-              Edit Form URL:
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={generatedForm.data.editFormUrl}
-                readOnly
-                className="flex-1 px-3 py-2 border border-white/20 rounded-md bg-gray-950/60 text-white text-sm"
-              />
-              <Button
-                onClick={() => copyToClipboard(generatedForm.data.editFormUrl)}
-                variant="outline"
-                label="Copy"
-              />
-              <Button
-                onClick={() =>
-                  window.open(generatedForm.data.editFormUrl, "_blank")
-                }
-                variant="outline"
-                label="Edit"
-              />
-            </div>
+          <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-400/20 rounded-xl">
+            <p className="text-cyan-200 text-sm">
+              <strong>📌 Note:</strong> Share the registration form link with
+              attendees to collect their information.
+            </p>
           </div>
-
-          {generatedForm.data.instructions && (
-            <div>
-              <label className="block text-sm font-medium text-green-200 mb-1">
-                Instructions:
-              </label>
-              <p className="text-white/90 text-sm bg-gray-950/40 p-3 rounded-xl border border-white/10">
-                {generatedForm.data.instructions}
-              </p>
-            </div>
-          )}
-
-          <Button
-            onClick={() => setGeneratedForm(null)}
-            variant="outline"
-            label="Generate Another Form"
-          />
         </div>
       </div>
     );

@@ -4,6 +4,8 @@ export interface EventData {
   location: string;
   description: string;
   eventType: PurposeType;
+  registrationFormUrl?: string;
+  registrationFormEditUrl?: string;
 }
 
 // Legacy interface for compatibility

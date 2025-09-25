@@ -30,6 +30,8 @@ interface Event {
   attendeeCount: number;
   status: "upcoming" | "ongoing" | "completed";
   createdAt: string;
+  registrationFormUrl?: string;
+  registrationFormEditUrl?: string;
 }
 
 interface LandingPageProps {
@@ -58,6 +60,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     attendeeCount: Math.floor(Math.random() * 200) + 1, // Random for now since backend doesn't track this yet
     status: new Date(event.dateTime) > new Date() ? "upcoming" : "completed",
     createdAt: event.createdAt,
+    registrationFormUrl: event.registrationFormUrl,
+    registrationFormEditUrl: event.registrationFormEditUrl,
   }));
 
   // Sync authentication and fetch events when user is authenticated

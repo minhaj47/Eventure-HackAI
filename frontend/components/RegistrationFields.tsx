@@ -32,6 +32,63 @@ export const RegistrationFields: React.FC<RegistrationFieldsProps> = ({
     setGeneratedFormData(formData);
   };
 
+  // Check if event already has a registration form
+  const hasExistingForm =
+    eventData?.registrationFormUrl &&
+    eventData.registrationFormUrl.trim() !== "";
+
+  // If there's an existing form, show it directly without generation options
+  if (hasExistingForm) {
+    return (
+      <Card title="Registration Form" icon={<Users className="h-6 w-6" />}>
+        <div className="bg-green-900/20 border border-green-400/20 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-green-300 mb-4">
+            📋 Registration Form Available
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-white font-medium">
+                {eventData?.eventName
+                  ? `${eventData.eventName} - Registration Form`
+                  : "Registration Form"}
+              </p>
+              <p className="text-green-200/80 text-sm mt-1">
+                Ready for attendee registration
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() =>
+                  window.open(eventData.registrationFormUrl, "_blank")
+                }
+                label="📝 Open Registration Form"
+                variant="primary"
+              />
+              {eventData.registrationFormEditUrl && (
+                <Button
+                  onClick={() =>
+                    window.open(eventData.registrationFormEditUrl, "_blank")
+                  }
+                  label="✏️ Edit Form"
+                  variant="outline"
+                />
+              )}
+            </div>
+
+            <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-400/20 rounded-xl">
+              <p className="text-cyan-200 text-sm">
+                <strong>📌 Note:</strong> Share the registration form link with
+                attendees to collect their information.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   if (showGoogleFormGenerator) {
     return (
       <Card title="Generate Google Form" icon={<Users className="h-6 w-6" />}>
@@ -46,6 +103,8 @@ export const RegistrationFields: React.FC<RegistrationFieldsProps> = ({
         <GoogleFormGenerator
           eventId={eventId}
           eventName={eventData?.eventName}
+          existingFormUrl={eventData?.registrationFormUrl}
+          existingEditUrl={eventData?.registrationFormEditUrl}
           onFormGenerated={handleFormGenerated}
         />
       </Card>

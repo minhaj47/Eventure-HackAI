@@ -1,11 +1,11 @@
 import { Download, Image as ImageIcon, RefreshCw, Share2 } from "lucide-react";
 import React, { useState } from "react";
 import { generateEventPosters } from "../services/contentGenerationApi";
-import { Banner, BannerConfig, EventData } from "../types";
+import { Banner, BannerConfig, LegacyEventData } from "../types";
 import { ActionButton, Button, Card } from "./ui";
 
 interface BannerGeneratorProps {
-  eventData: EventData;
+  eventData: LegacyEventData;
   generatedBanners: Banner[];
   isGeneratingBanner: boolean;
   onGenerateBanners: (config?: BannerConfig) => void;
