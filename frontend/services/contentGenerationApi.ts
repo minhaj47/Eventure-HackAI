@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://cmfwhglptyzy5jxgtky5cwwhv.agent.a.smyth.ai";
+const API_BASE_URL = "https://cmfw5qbmfxvnkjxgtpjoabofw.agent.pa.smyth.ai";
 
 export interface EventPostsRequest {
   eventName: string;
@@ -59,32 +59,31 @@ export const generateEventPosts = async (
   }
 };
 
-export const generateEventPosters = async (
-  data: EventPostersRequest
-): Promise<any> => {
+export const generateEventPosters = async (eventData: EventPostersRequest) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/generate_event_posters`, {
-      method: "POST",
+    const response = await fetch('https://cmfz9614xai39jxgtk3ptj6u1.agent.pa.smyth.ai/api/generate_event_posters', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
+        
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        eventName: eventData.eventName,
+        dateTime: eventData.dateTime,
+        location: eventData.location,
+        eventType: eventData.eventType,
+        description: eventData.description,
+        googleFormLink: eventData.googleFormLink
+      })
     });
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to generate event posters: ${response.statusText}`
-      );
-    }
-
+    
     const result = await response.json();
-    return result;
+    return result; // This will contain your 3 generated poster images
   } catch (error) {
-    console.error("Error generating event posters:", error);
+    console.error('Error generating posters:', error);
     throw error;
   }
 };
-
 export const sendEventUpdate = async (data: {
   sheetId: string;
   eventName: string;

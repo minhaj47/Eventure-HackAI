@@ -39,15 +39,21 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
     setPosterError(null);
 
     try {
-      const posters = await generateEventPosters({
+      const response = await generateEventPosters({
         eventName: eventData.name,
         dateTime: eventData.datetime,
         location: eventData.location,
         eventType: eventData.eventType,
         description: eventData.description,
       });
-
-      setApiPosters(posters);
+      
+      console.log("API Response:", response);
+      console.log("API Posters:", response.result.Output);
+      // Handle the SmythOS agent response format
+      
+        setApiPosters(response.result.Output);
+        console.log("API Posters:", apiPosters);
+      
     } catch (error) {
       console.error("Failed to load AI posters:", error);
       setPosterError("Failed to generate AI posters. Please try again.");
@@ -56,15 +62,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
     }
   };
 
-  const handleGenerateBanners = () => {
-    if (apiPosters) {
-      // If we have API posters, use them instead of generating new ones
-      onGenerateBanners(config);
-    } else {
-      // Fallback to local generation
-      onGenerateBanners(config);
-    }
-  };
+  
 
   const handleRefreshBanner = async (bannerId: number) => {
     if (onRefreshBanner) {
@@ -80,6 +78,45 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
 
   const handleConfigChange = (field: keyof BannerConfig, value: string) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const downloadImage = async (imageUrl: string, filename: string) => {
+    try {
+      const response = await fetch(`/api/proxy?url=${encodeURIComponent(imageUrl)}`);
+      console.log("Response:", response); 
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download image:', error);
+    }
+  };
+
+  const shareImage = async (imageUrl: string) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${eventData.name} Poster`,
+          url: `${window.location.origin}/api/proxy?url=${encodeURIComponent(imageUrl)}`,
+        });
+      } catch (error) {
+        console.error('Failed to share:', error);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(apiPosters.poster1.url);
+        alert('Image URL copied to clipboard!');
+      } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+      }
+    }
   };
 
   return (
@@ -107,7 +144,19 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
         </div>
       )}
 
-      {/* AI-Generated Posters Section */}
+      {/* Generate Posters Button */}
+      {!apiPosters && !isLoadingPoster && (
+        <div className="mb-6 text-center">
+          <Button
+            onClick={loadPosters}
+            loading={isLoadingPoster}
+            label="Generate AI Posters"
+            variant="outline"
+          />
+        </div>
+      )}
+
+      {/* AI-Generated Posters Display */}
       {apiPosters && !isLoadingPoster && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -122,189 +171,178 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
               Refresh
             </button>
           </div>
-          <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
-            <div className="prose prose-invert max-w-none">
-              <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                {JSON.stringify(apiPosters, null, 2)}
-              </pre>
-            </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {apiPosters.poster1 && (
+              <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
+                <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
+                  <img 
+                    src={`/api/proxy?url=${encodeURIComponent(apiPosters.poster1.url)}`} 
+                    alt="AI Generated Poster 1" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMTwvdGV4dD48L3N2Zz4=';
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-300">Professional Style</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => downloadImage(apiPosters.poster1.url, `${eventData.name}-poster-1.jpg`)}
+                      className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      <Download className="h-4 w-4 text-white" />
+                    </button>
+                    <button
+                      onClick={() => shareImage(apiPosters.poster1.url)}
+                      className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {apiPosters.poster2 && (
+              <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
+                <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
+                  <img 
+                    src={`/api/proxy?url=${encodeURIComponent(apiPosters.poster2.url)}`} 
+                    alt="AI Generated Poster 2" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMjwvdGV4dD48L3N2Zz4=';
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-300">Modern Style</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => downloadImage(apiPosters.poster2.url, `${eventData.name}-poster-2.jpg`)}
+                      className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      <Download className="h-4 w-4 text-white" />
+                    </button>
+                    <button
+                      onClick={() => shareImage(apiPosters.poster2.url)}
+                      className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {apiPosters.poster3 && (
+              <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
+                <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
+                <img 
+  src={`/api/proxy?url=${encodeURIComponent(apiPosters.poster3.url)}`} 
+  alt="Generated Poster" 
+
+                  
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMzwvdGV4dD48L3N2Zz4=';
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-300">Creative Style</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => downloadImage(apiPosters.poster3.url, `${eventData.name}-poster-3.jpg`)}
+                      className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      <Download className="h-4 w-4 text-white" />
+                    </button>
+                    <button
+                      onClick={() => shareImage(apiPosters.poster3.url)}
+                      className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      <Share2 className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Configuration Panel */}
-      <div className="mb-6">
-        <div className="bg-gray-950/40 rounded-xl p-6 border border-white/20 mb-6">
-          <div className="text-center">
-            <p className="text-white/80 text-lg mb-8 font-light">
-              Generate professional banners with comprehensive AI-powered design
-              options:
-              <br />
-              <span className="text-sm text-white/70">
-                Size • Type • Style • Colors • Layout • Imagery
-              </span>
-            </p>
+      {/* Configuration Panel - Only show if no AI posters or for local generation */}
+      {!apiPosters && (
+        <div className="mb-6">
+          <div className="bg-gray-950/40 rounded-xl p-6 border border-white/20 mb-6">
+            <div className="text-center">
+              <p className="text-white/80 text-lg mb-8 font-light">
+                Generate professional banners with comprehensive AI-powered design
+                options:
+                <br />
+                <span className="text-sm text-white/70">
+                  Size • Type • Style • Colors • Layout • Imagery
+                </span>
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Configuration options remain the same */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Banner Size
+                </label>
+                <select
+                  value={config.size}
+                  onChange={(e) => handleConfigChange("size", e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
+                >
+                  <option value="small">Small (800x400)</option>
+                  <option value="medium">Medium (1200x600)</option>
+                  <option value="large">Large (1920x1080)</option>
+                  <option value="custom">Custom Size</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Banner Type
+                </label>
+                <select
+                  value={config.type}
+                  onChange={(e) => handleConfigChange("type", e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
+                >
+                  <option value="social">Social Media</option>
+                  <option value="web">Web Banner</option>
+                  <option value="print">Print Ready</option>
+                  <option value="email">Email Header</option>
+                </select>
+              </div>
+
+              {/* Add other configuration options as needed */}
+            </div>
+            
+            {generatedBanners.length === 0 && (
+              <div className="flex justify-center pt-10 pb-4">
+                <Button
+                  onClick={loadPosters}
+                  loading={isGeneratingBanner}
+                  label="Generate Local Banners"
+                  variant="outline"
+                />
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Legacy Options */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Banner Size
-              </label>
-              <select
-                value={config.size}
-                onChange={(e) => handleConfigChange("size", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
-              >
-                <option value="small">Small (800x400)</option>
-                <option value="medium">Medium (1200x600)</option>
-                <option value="large">Large (1920x1080)</option>
-                <option value="custom">Custom Size</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Banner Type
-              </label>
-              <select
-                value={config.type}
-                onChange={(e) => handleConfigChange("type", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
-              >
-                <option value="social">Social Media</option>
-                <option value="web">Web Banner</option>
-                <option value="print">Print Ready</option>
-                <option value="email">Email Header</option>
-              </select>
-            </div>
-
-            {/* Enhanced Options */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Design Style
-              </label>
-              <select
-                value={config.style}
-                onChange={(e) => handleConfigChange("style", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
-              >
-                <option value="minimal">Minimal</option>
-                <option value="modern">Modern</option>
-                <option value="classic">Classic</option>
-                <option value="professional">Professional</option>
-                <option value="creative">Creative</option>
-                <option value="elegant">Elegant</option>
-                <option value="bold">Bold</option>
-                <option value="playful">Playful</option>
-                <option value="luxury">Luxury</option>
-                <option value="tech">Tech/Digital</option>
-                <option value="retro">Retro</option>
-                <option value="islamic">Islamic</option>
-                <option value="abstract">Abstract</option>
-                <option value="geometric">Geometric</option>
-                <option value="organic">Organic</option>
-                <option value="industrial">Industrial</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Color Scheme
-              </label>
-              <select
-                value={config.colorScheme}
-                onChange={(e) =>
-                  handleConfigChange("colorScheme", e.target.value)
-                }
-                className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
-              >
-                <option value="warm">Warm Tones</option>
-                <option value="cool">Cool Tones</option>
-                <option value="vibrant">Vibrant</option>
-                <option value="neon">Neon</option>
-                <option value="pastel">Pastel</option>
-                <option value="monochrome">Monochrome</option>
-                <option value="earth">Earth Tones</option>
-                <option value="ocean">Ocean Blues</option>
-                <option value="sunset">Sunset Colors</option>
-                <option value="corporate">Corporate</option>
-                <option value="brand">Brand Colors</option>
-                <option value="high-contrast">High Contrast</option>
-                <option value="muted">Muted</option>
-                <option value="gradient">Gradient</option>
-                <option value="complementary">Complementary</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Layout Style
-              </label>
-              <select
-                value={config.layout}
-                onChange={(e) => handleConfigChange("layout", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
-              >
-                <option value="centered">Centered</option>
-                <option value="left-aligned">Left Aligned</option>
-                <option value="split-screen">Split Screen</option>
-                <option value="header-focus">Header Focus</option>
-                <option value="bottom-heavy">Bottom Heavy</option>
-                <option value="sidebar">Sidebar</option>
-                <option value="grid">Grid Layout</option>
-                <option value="asymmetric">Asymmetric</option>
-                <option value="magazine">Magazine Style</option>
-                <option value="poster">Poster Layout</option>
-                <option value="card">Card Design</option>
-                <option value="billboard">Billboard</option>
-                <option value="social-story">Social Story</option>
-                <option value="banner">Banner Format</option>
-                <option value="flyer">Flyer Layout</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Imagery/Graphics
-              </label>
-              <select
-                value={config.imagery}
-                onChange={(e) => handleConfigChange("imagery", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-950/60 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
-              >
-                <option value="photography">Photography</option>
-                <option value="illustrations">Illustrations</option>
-                <option value="icons">Icons</option>
-                <option value="geometric">Geometric Shapes</option>
-                <option value="abstract">Abstract Art</option>
-                <option value="patterns">Patterns</option>
-                <option value="islamic-motifs">Islamic Motifs</option>
-                <option value="tech-elements">Tech Elements</option>
-                <option value="nature">Nature</option>
-                <option value="cityscape">Cityscape</option>
-                <option value="minimalist">Minimalist</option>
-                <option value="decorative">Decorative</option>
-                <option value="symbols">Symbols</option>
-                <option value="data-viz">Data Visualization</option>
-                <option value="artistic">Artistic</option>
-              </select>
-            </div>
-          </div>
-          {generatedBanners.length === 0 && (
-            <div className="flex justify-center pt-10 pb-4">
-              <Button
-                onClick={handleGenerateBanners}
-                loading={isGeneratingBanner}
-                label="Generate Banners"
-                variant="outline"
-              />
-            </div>
-          )}
         </div>
-      </div>
+      )}
 
+      {/* Local Generated Banners */}
       {generatedBanners.length != 0 && (
         <div className="grid gap-8">
           {generatedBanners.map((banner) => (
