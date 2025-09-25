@@ -23,10 +23,18 @@ interface ClassroomManagementProps {
   };
 }
 
+interface ClassroomDetails {
+  className: string;
+  classCode: string;
+  classLink: string;
+  instructions: string;
+}
+
 interface Classroom {
   id: string;
   name: string;
   code: string;
+  link: string;
   description: string;
   createdAt: string;
   participantCount: number;
