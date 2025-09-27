@@ -34,8 +34,9 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
 
     try {
       let result;
-
+      console.log(eventId);
       if (eventId) {
+        console.log("Generating event form");
         // Generate form for specific event
         result = await generateEventForm(eventId, {
           editorEmail: editorEmail || undefined,
@@ -48,7 +49,7 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
           editorEmail: editorEmail || undefined,
         });
       }
-
+      console.log("API Result:", result);
       setGeneratedForm(result);
       onFormGenerated?.(result);
     } catch (err) {
@@ -58,16 +59,60 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
 
   // Show existing form if available - no generation options when form exists
   if (hasExistingForm || generatedForm?.success) {
-    const formData = generatedForm?.data || {
-      formTitle: eventName
-        ? `${eventName} - Registration Form`
-        : "Registration Form",
-      formUrl: existingFormUrl,
-      editFormUrl: existingEditUrl,
-      instructions: generatedForm?.isExisting
-        ? "Form already exists for this event"
-        : "Registration form is ready",
-    };
+    // Extract form data from the correct structure
+    let formData;
+    
+    if (generatedForm?.success && generatedForm.data?.length > 0) {
+      // Find the APIOutput result in the data array
+      const outputResult = generatedForm.data.find((item: any) => 
+        item.name === "APIOutput"
+      );
+      
+      console.log("Output Result:", outputResult);
+      console.log("Result structure:", outputResult?.result);
+      console.log("Output structure:", outputResult?.result?.Output);
+      console.log("FormDetails structure:", outputResult?.result?.Output?.formDetails);
+      
+      if (outputResult?.result?.Output?.formDetails) {
+        // The form details are nested in result.Output.formDetails
+        const formDetails = outputResult.result.Output.formDetails;
+        formData = {
+          formTitle: formDetails.formTitle || (eventName ? `${eventName} - Registration Form` : "Registration Form"),
+          formUrl: formDetails.formUrl,
+          editFormUrl: formDetails.editFormUrl,
+          instructions: formDetails.instructions,
+          formId: formDetails.formId,
+        };
+        
+        console.log("Extracted form data:", formData);
+      } else if (outputResult?.result) {
+        // Fallback: try to access directly from result
+        const result = outputResult.result;
+        formData = {
+          formTitle: result.formTitle || (eventName ? `${eventName} - Registration Form` : "Registration Form"),
+          formUrl: result.formUrl,
+          editFormUrl: result.editFormUrl,
+          instructions: result.instructions,
+          formId: result.formId,
+        };
+        
+        console.log("Extracted form data (fallback):", formData);
+      }
+    }
+    
+    // Fallback to existing form data if no generated form
+    if (!formData) {
+      formData = {
+        formTitle: eventName
+          ? `${eventName} - Registration Form`
+          : "Registration Form",
+        formUrl: existingFormUrl,
+        editFormUrl: existingEditUrl,
+        instructions: generatedForm?.isExisting
+          ? "Form already exists for this event"
+          : "Registration form is ready",
+      };
+    }
 
     return (
       <div className="bg-green-900/20 border border-green-400/20 rounded-xl p-6">
@@ -84,11 +129,13 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              onClick={() => window.open(formData.formUrl, "_blank")}
-              variant="primary"
-              label="📝 Open Registration Form"
-            />
+            {formData.formUrl && (
+              <Button
+                onClick={() => window.open(formData.formUrl, "_blank")}
+                variant="primary"
+                label="📝 Open Registration Form"
+              />
+            )}
             {formData.editFormUrl && (
               <Button
                 onClick={() => window.open(formData.editFormUrl, "_blank")}
@@ -174,8 +221,27 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
         </div>
 
         {error && (
-          <div className="bg-red-900/20 border border-red-400/20 rounded-xl p-3">
-            <p className="text-red-300 text-sm">{error}</p>
+          <div className="bg-red-900/20 border border-red-400/20 rounded-xl p-4">
+            <div className="flex items-start space-x-3">
+              <span className="text-red-400 text-lg">⚠️</span>
+              <div className="flex-1">
+                <h4 className="text-red-300 font-medium mb-2">Form Generation Failed</h4>
+                <p className="text-red-200 text-sm mb-3">{error}</p>
+                {(error.includes('timeout') || error.includes('unavailable') || error.includes('connection')) && (
+                  <div className="space-y-2">
+                    <p className="text-red-200 text-xs">
+                      This is usually a temporary issue. The external form service may be busy.
+                    </p>
+                    <button
+                      onClick={() => handleGenerateForm({ preventDefault: () => {} } as React.FormEvent)}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded-md text-sm font-medium transition-colors"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -191,7 +257,7 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
       <div className="mt-4 p-3 bg-cyan-500/10 border border-cyan-400/20 rounded-xl">
         <p className="text-cyan-200 text-sm">
           <strong>Note:</strong> The generated form will include fields for
-          Name, Email, WhatsApp number, and Telegram username.
+          Name, Email, WhatsApp number, and optional Telegram username.
         </p>
       </div>
     </div>

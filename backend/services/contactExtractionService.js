@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const agentUrl = process.env.SMYTHOS_AGENT_URL || 'https://cmfw5qbmfxvnkjxgtpjoabofw.agent.pa.smyth.ai';
+const agentUrl = process.env.SMYTHOS_AGENT_URL || 'https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai';
 
 export const extractAllContacts = async (sheetLink) => {
   try {

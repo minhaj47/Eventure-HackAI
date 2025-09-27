@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://cmfw5qbmfxvnkjxgtpjoabofw.agent.pa.smyth.ai";
+const API_BASE_URL = "https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai";
 
 export interface EventPostsRequest {
   eventName: string;
@@ -61,7 +61,7 @@ export const generateEventPosts = async (
 
 export const generateEventPosters = async (eventData: EventPostersRequest) => {
   try {
-    const response = await fetch('https://cmfz9614xai39jxgtk3ptj6u1.agent.pa.smyth.ai/api/generate_event_posters', {
+    const response = await fetch('https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai/api/generate_event_posters', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

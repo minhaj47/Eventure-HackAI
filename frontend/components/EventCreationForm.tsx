@@ -76,6 +76,7 @@ export const EventCreationForm: React.FC<EventCreationFormProps> = ({
           rows={4}
         />
       </div>
+
     </div>
 
     <div className="mt-8 flex justify-center">

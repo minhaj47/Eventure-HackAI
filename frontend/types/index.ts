@@ -6,6 +6,7 @@ export interface EventData {
   eventType: PurposeType;
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
+  autoCreateForm?: boolean;
 }
 
 // Legacy interface for compatibility

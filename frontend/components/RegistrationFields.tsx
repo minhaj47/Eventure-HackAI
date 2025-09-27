@@ -26,19 +26,74 @@ export const RegistrationFields: React.FC<RegistrationFieldsProps> = ({
   eventId,
 }) => {
   const [showGoogleFormGenerator, setShowGoogleFormGenerator] = useState(false);
-  const [generatedFormData, setGeneratedFormData] = useState<any>(null);
+  const [generatedFormData, setGeneratedFormData] = useState<{
+    success?: boolean;
+    data?: Array<{ name: string; result?: { Output?: { formDetails?: { formUrl?: string; editFormUrl?: string; formTitle?: string } } } }>;
+  } | null>(null);
 
-  const handleFormGenerated = (formData: any) => {
-    setGeneratedFormData(formData);
-  };
 
-  // Check if event already has a registration form
+
+  // Check if event already has a registration form or if one was just generated
   const hasExistingForm =
-    eventData?.registrationFormUrl &&
-    eventData.registrationFormUrl.trim() !== "";
+    (eventData?.registrationFormUrl && eventData.registrationFormUrl.trim() !== "") ||
+    (generatedFormData?.success && generatedFormData?.data);
 
-  // If there's an existing form, show it directly without generation options
+  // Debug logging
+  console.log('=== REGISTRATION FIELDS COMPONENT ===');
+  console.log('Event Data:', eventData);
+  console.log('Registration Form URL:', eventData?.registrationFormUrl);
+  console.log('Edit Form URL:', eventData?.registrationFormEditUrl);
+  console.log('Has Existing Form:', hasExistingForm);
+  console.log('Event ID:', eventId);
+
+  // If there's an existing form or a newly generated form, show it directly
   if (hasExistingForm) {
+    console.log('=== SHOWING EXISTING FORM INTERFACE ===');
+    
+    // Determine form data source (existing event data or newly generated data)
+    let formData;
+    if (eventData?.registrationFormUrl) {
+      // Use existing form data from eventData
+      formData = {
+        formUrl: eventData.registrationFormUrl,
+        editFormUrl: eventData.registrationFormEditUrl,
+        formTitle: eventData.eventName ? `${eventData.eventName} - Registration Form` : "Registration Form"
+      };
+    } else if (generatedFormData?.success && generatedFormData?.data) {
+      // Extract form data from generated form response
+      const responseData = generatedFormData.data;
+      
+      // Handle different response formats
+      if (Array.isArray(responseData)) {
+        // Original SmythOS array format
+        const outputResult = responseData.find((item: { name: string; result?: unknown }) => 
+          item.name === "APIOutput"
+        );
+        
+        if (outputResult?.result?.Output?.formDetails) {
+          const formDetails = outputResult.result.Output.formDetails;
+          formData = {
+            formUrl: formDetails.formUrl,
+            editFormUrl: formDetails.editFormUrl,
+            formTitle: formDetails.formTitle || (eventData?.eventName ? `${eventData.eventName} - Registration Form` : "Registration Form")
+          };
+        }
+      } else if (responseData && typeof responseData === 'object') {
+        // Direct object format (from mock service or simplified SmythOS response)
+        const formResponse = responseData as { formUrl?: string; editFormUrl?: string; formTitle?: string };
+        formData = {
+          formUrl: formResponse.formUrl,
+          editFormUrl: formResponse.editFormUrl,
+          formTitle: formResponse.formTitle || (eventData?.eventName ? `${eventData.eventName} - Registration Form` : "Registration Form")
+        };
+      }
+    }
+
+    if (!formData) {
+      console.log('No form data available');
+      return null;
+    }
+
     return (
       <Card title="Registration Form" icon={<Users className="h-6 w-6" />}>
         <div className="bg-green-900/20 border border-green-400/20 rounded-xl p-6">
@@ -48,29 +103,23 @@ export const RegistrationFields: React.FC<RegistrationFieldsProps> = ({
 
           <div className="space-y-4">
             <div>
-              <p className="text-white font-medium">
-                {eventData?.eventName
-                  ? `${eventData.eventName} - Registration Form`
-                  : "Registration Form"}
-              </p>
+              <p className="text-white font-medium">{formData.formTitle}</p>
               <p className="text-green-200/80 text-sm mt-1">
                 Ready for attendee registration
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                onClick={() =>
-                  window.open(eventData.registrationFormUrl, "_blank")
-                }
-                label="📝 Open Registration Form"
-                variant="primary"
-              />
-              {eventData.registrationFormEditUrl && (
+              {formData.formUrl && (
                 <Button
-                  onClick={() =>
-                    window.open(eventData.registrationFormEditUrl, "_blank")
-                  }
+                  onClick={() => window.open(formData.formUrl, "_blank")}
+                  label="📝 Open Registration Form"
+                  variant="primary"
+                />
+              )}
+              {formData.editFormUrl && (
+                <Button
+                  onClick={() => window.open(formData.editFormUrl, "_blank")}
                   label="✏️ Edit Form"
                   variant="outline"
                 />
@@ -92,20 +141,17 @@ export const RegistrationFields: React.FC<RegistrationFieldsProps> = ({
   if (showGoogleFormGenerator) {
     return (
       <Card title="Generate Google Form" icon={<Users className="h-6 w-6" />}>
-        <div className="mb-4">
-          <button
-            onClick={() => setShowGoogleFormGenerator(false)}
-            className="text-cyan-400 hover:text-cyan-300 text-sm mb-4"
-          >
-            ← Back to Registration Fields
-          </button>
-        </div>
         <GoogleFormGenerator
           eventId={eventId}
           eventName={eventData?.eventName}
           existingFormUrl={eventData?.registrationFormUrl}
           existingEditUrl={eventData?.registrationFormEditUrl}
-          onFormGenerated={handleFormGenerated}
+          onFormGenerated={(formData) => {
+            setGeneratedFormData(formData);
+            setShowGoogleFormGenerator(false); // Hide generator after form creation
+            // The component will re-render and show the final interface
+            // because hasExistingForm will be true after form generation
+          }}
         />
       </Card>
     );
@@ -179,32 +225,7 @@ export const RegistrationFields: React.FC<RegistrationFieldsProps> = ({
         />
       </div>
 
-      {generatedFormData && (
-        <div className="mt-6 p-4 bg-green-900/20 rounded-xl border border-green-400/20">
-          <h4 className="text-green-300 font-semibold mb-2">
-            ✅ Form Generated Successfully!
-          </h4>
-          <p className="text-green-200 text-sm mb-2">
-            Form: {generatedFormData.data?.formTitle}
-          </p>
-          <div className="flex space-x-2">
-            <Button
-              onClick={() =>
-                window.open(generatedFormData.data?.formUrl, "_blank")
-              }
-              label="View Form"
-              variant="outline"
-            />
-            <Button
-              onClick={() =>
-                window.open(generatedFormData.data?.editFormUrl, "_blank")
-              }
-              label="Edit Form"
-              variant="outline"
-            />
-          </div>
-        </div>
-      )}
+
 
       {/* 
     <div className="p-6 bg-cyan-500/10 rounded-xl border border-cyan-400/20 text-base text-cyan-200">

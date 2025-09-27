@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class SmythOSClassroom {
   constructor() {
-    this.agentUrl = process.env.SMYTHOS_AGENT_URL;
+    this.agentUrl = 'https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai';
   }
 
   async createClassroom(className) {

@@ -1,6 +1,7 @@
 import {
   Bell,
   Clock,
+  Download,
   Edit3,
   Mail,
   RefreshCw,
@@ -9,7 +10,14 @@ import {
   Users,
 } from "lucide-react";
 import React, { useState } from "react";
-import { generateEmailBody } from "../services/apiService";
+import { 
+  generateEmailBody, 
+  extractAllContactsFromSheet, 
+  parseEmailContent,
+  sendEmailToAllParticipants,
+  sendSingleEmail,
+  Contact 
+} from "../services/apiService";
 import { sendEventUpdate } from "../services/contentGenerationApi";
 import { Card } from "./ui";
 
@@ -45,41 +53,45 @@ export const AutomatedReminders: React.FC<AutomatedRemindersProps> = ({
     [key: number]: boolean;
   }>({});
 
-  // Mock participants data
-  const [participants] = useState([
+  // Google Sheet Link for participant extraction
+  const [googleSheetLink, setGoogleSheetLink] = useState("");
+  const [isExtractingParticipants, setIsExtractingParticipants] = useState(false);
+  
+  // Participants data
+  const [participants, setParticipants] = useState([
     {
       id: 1,
       name: "Alex Johnson",
       email: "alex@example.com",
-      status: "confirmed",
+      status: "confirmed" as const,
       registeredAt: "2024-01-15",
     },
     {
       id: 2,
       name: "Sarah Chen",
       email: "sarah@example.com",
-      status: "pending",
+      status: "pending" as const,
       registeredAt: "2024-01-16",
     },
     {
       id: 3,
       name: "Michael Brown",
       email: "michael@example.com",
-      status: "confirmed",
+      status: "confirmed" as const,
       registeredAt: "2024-01-17",
     },
     {
       id: 4,
       name: "Emma Davis",
       email: "emma@example.com",
-      status: "confirmed",
+      status: "confirmed" as const,
       registeredAt: "2024-01-18",
     },
     {
       id: 5,
       name: "James Wilson",
       email: "james@example.com",
-      status: "pending",
+      status: "pending" as const,
       registeredAt: "2024-01-19",
     },
   ]);
@@ -173,10 +185,45 @@ Questions? Contact us at: events@company.com`;
   };
 
   const sendEmailToParticipant = async (participantId: number) => {
+    if (!generatedEmail.trim()) {
+      alert("Please generate an email first before sending to participants");
+      return;
+    }
+
+    const participant = participants.find(p => p.id === participantId);
+    if (!participant) {
+      alert("Participant not found");
+      return;
+    }
+
     setSendingStatus((prev) => ({ ...prev, [participantId]: true }));
-    // Simulate sending email
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setSendingStatus((prev) => ({ ...prev, [participantId]: false }));
+
+    try {
+      // Parse the generated email to extract subject and body
+      const parsedEmail = parseEmailContent(generatedEmail);
+      
+      // Personalize the email body with participant's name
+      const personalizedBody = parsedEmail.body.replace(/\[Participant Name\]/g, participant.name);
+      
+      // Send email to individual participant
+      const result = await sendSingleEmail({
+        recipientEmail: participant.email,
+        subject: parsedEmail.subject,
+        body: personalizedBody
+      });
+
+      if (result.success) {
+        alert(`Successfully sent email to ${participant.name}!`);
+      } else {
+        throw new Error(result.message || 'Failed to send email');
+      }
+
+    } catch (error) {
+      console.error('Failed to send email to participant:', error);
+      alert(`Failed to send email to ${participant.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSendingStatus((prev) => ({ ...prev, [participantId]: false }));
+    }
   };
 
   const sendViaGoogleSheets = async () => {
@@ -208,10 +255,43 @@ Questions? Contact us at: events@company.com`;
   };
 
   const sendEmailToAll = async () => {
+    if (!generatedEmail.trim()) {
+      alert("Please generate an email first before sending to participants");
+      return;
+    }
+
+    if (!googleSheetLink.trim()) {
+      alert("Please provide a Google Sheet link to send emails to participants");
+      return;
+    }
+
     setIsSendingAll(true);
-    // Simulate sending to all participants
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    setIsSendingAll(false);
+
+    try {
+      // Parse the generated email to extract subject and body
+      const parsedEmail = parseEmailContent(generatedEmail);
+      
+      console.log('Parsed email:', parsedEmail);
+
+      // Send emails to all participants via Google Sheet
+      const result = await sendEmailToAllParticipants({
+        sheetLink: googleSheetLink,
+        emailSubject: parsedEmail.subject,
+        emailBody: parsedEmail.body
+      });
+
+      if (result.success) {
+        alert(`Successfully sent emails to all participants! ${result.message || ''}`);
+      } else {
+        throw new Error(result.message || 'Failed to send emails');
+      }
+
+    } catch (error) {
+      console.error('Failed to send emails to participants:', error);
+      alert(`Failed to send emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSendingAll(false);
+    }
   };
 
   const regenerateEmail = async () => {
@@ -256,6 +336,37 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
       alert("Failed to regenerate email. Please try again.");
     } finally {
       setIsGeneratingEmail(false);
+    }
+  };
+
+  const extractParticipantsFromSheet = async () => {
+    if (!googleSheetLink.trim()) {
+      alert("Please provide a Google Sheet link");
+      return;
+    }
+
+    setIsExtractingParticipants(true);
+
+    try {
+      const extractedContacts = await extractAllContactsFromSheet(googleSheetLink);
+      console.log("Extracted contacts:", extractedContacts);
+      
+      // Convert extracted contacts to participant format
+      const newParticipants = extractedContacts.map((contact: Contact, index: number) => ({
+        id: Date.now() + index, // Generate unique ID
+        name: contact.name,
+        email: contact.email,
+        status: "pending" as const,
+        registeredAt: new Date().toISOString().split('T')[0],
+      }));
+
+      setParticipants(newParticipants);
+      alert(`Successfully extracted ${newParticipants.length} participants from the Google Sheet!`);
+    } catch (error) {
+      console.error("Failed to extract participants:", error);
+      alert(`Failed to extract participants: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsExtractingParticipants(false);
     }
   };
 
@@ -428,6 +539,55 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
           )}
         </div>
 
+        {/* Google Sheet Participant Extraction */}
+        <div className="p-6 bg-gradient-to-r from-blue-900/20 to-cyan-900/20 rounded-2xl border border-blue-500/20">
+          <div className="flex items-center justify-between mb-6">
+            <h4 className="text-lg font-tomorrow text-white flex items-center gap-2">
+              <Download className="h-5 w-5 text-blue-400" />
+              Extract Participants from Google Sheet
+            </h4>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Google Sheet Link
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="url"
+                  value={googleSheetLink}
+                  onChange={(e) => setGoogleSheetLink(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/..."
+                  className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                />
+                <button
+                  onClick={extractParticipantsFromSheet}
+                  disabled={isExtractingParticipants || !googleSheetLink.trim()}
+                  className="px-6 py-3 bg-blue-600/20 font-tomorrow hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center gap-2 whitespace-nowrap"
+                >
+                  {isExtractingParticipants ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {isExtractingParticipants ? "Extracting..." : "Extract Data"}
+                </button>
+              </div>
+            </div>
+
+            <div className="text-sm text-gray-400 bg-gray-900/30 border border-gray-600/20 rounded-lg p-3">
+              <p className="font-medium text-gray-300 mb-2">Instructions:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Make sure your Google Sheet is publicly accessible or properly shared</li>
+                <li>The sheet should contain participant names and email addresses</li>
+                <li>Common column headers: Name, Email, Full Name, Email Address, etc.</li>
+                <li>After extraction, participants will be added to the list below</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         {/* Participants Management */}
         <div className="p-6 bg-gradient-to-r from-green-900/20 to-teal-900/20 rounded-2xl border border-green-500/20">
           <div className="flex items-center justify-between mb-6">
@@ -437,7 +597,7 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
             </h4>
             <button
               onClick={sendEmailToAll}
-              disabled={isSendingAll || !generatedEmail}
+              disabled={isSendingAll || !generatedEmail || !googleSheetLink.trim()}
               className="px-6 py-3 bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/30 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center gap-2"
             >
               {isSendingAll ? (
@@ -565,12 +725,16 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
             ))}
           </div>
 
-          {!generatedEmail && (
+          {(!generatedEmail || !googleSheetLink.trim()) && (
             <div className="mt-4 p-4 bg-amber-900/20 border border-amber-500/30 rounded-xl">
               <p className="text-amber-300 text-sm flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                Generate an email template first to enable sending reminders to
-                participants.
+                {!generatedEmail && !googleSheetLink.trim() 
+                  ? "Generate an email template and provide a Google Sheet link to send reminders to participants."
+                  : !generatedEmail 
+                  ? "Generate an email template first to enable sending reminders to participants."
+                  : "Provide a Google Sheet link in the section above to send emails to participants."
+                }
               </p>
             </div>
           )}

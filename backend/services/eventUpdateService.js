@@ -2,7 +2,7 @@ import axios from "axios";
 
 class EventUpdateService {
   constructor() {
-    this.baseURL = process.env.SMYTHOS_AGENT_URL||"https://cmfw5qbmfxvnkjxgtpjoabofw.agent.pa.smyth.ai";
+    this.baseURL = process.env.SMYTHOS_AGENT_URL||"https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai";
     //this.apiKey = process.env.SMYTHOS_API_KEY;
   }
 

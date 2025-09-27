@@ -13,8 +13,11 @@ import {
   RegistrationFields,
 } from "../components";
 import { useEventManager } from "../hooks/useEventManager";
+import { PurposeType } from "../types";
+import { BackendEvent } from "../hooks/useEvents";
 
-interface Event {
+// Local Event interface for this page that matches LandingPage's Event interface
+interface LandingPageEvent {
   id: string;
   name: string;
   eventType: string;
@@ -28,6 +31,12 @@ interface Event {
   registrationFormEditUrl?: string;
 }
 
+// Extended Event interface for selected events with additional fields
+interface Event extends LandingPageEvent {
+  _id: string;
+  eventType: PurposeType;
+}
+
 export default function AIEventManager() {
   const [currentView, setCurrentView] = React.useState<
     "landing" | "eventManager" | "eventDetails"
@@ -35,8 +44,43 @@ export default function AIEventManager() {
   const [selectedEvent, setSelectedEvent] = React.useState<Event | null>(null);
   const [eventCreated, setEventCreated] = React.useState(false);
 
-  const handleEventCreated = () => {
-    setEventCreated(true);
+    const handleEventCreated = (createdEvent?: BackendEvent) => {
+    console.log('=== HANDLE EVENT CREATED CALLED ===', createdEvent);
+    
+    if (!createdEvent) {
+      console.log('No created event provided');
+      return;
+    }
+    
+    // Always show event details when an event is created
+    console.log('Event created, switching to details view');
+    
+    const formattedEvent: Event = {
+      _id: createdEvent._id,
+      id: createdEvent._id || Date.now().toString(),
+      name: createdEvent.eventName,
+      eventType: createdEvent.eventType as PurposeType,
+      datetime: createdEvent.dateTime,
+      location: createdEvent.location || "",
+      description: createdEvent.description || "",
+      attendeeCount: 0,
+      status: new Date(createdEvent.dateTime) > new Date() ? "upcoming" : "completed",
+      createdAt: new Date().toISOString(),
+      registrationFormUrl: createdEvent.registrationFormUrl,
+      registrationFormEditUrl: createdEvent.registrationFormEditUrl,
+    };
+    
+    setSelectedEvent(formattedEvent);
+    setCurrentView("eventDetails");
+    
+    // Only set registration tab if forms exist, otherwise show first tab (ai)
+    if (createdEvent.registrationFormUrl && createdEvent.registrationFormEditUrl) {
+      setActiveTab("registration");
+      console.log('=== SWITCHING TO EVENT DETAILS VIEW WITH REGISTRATION TAB ===');
+    } else {
+      setActiveTab("ai");
+      console.log('=== SWITCHING TO EVENT DETAILS VIEW WITH AI TAB ===');
+    }
   };
 
   const {
@@ -69,8 +113,14 @@ export default function AIEventManager() {
     resetForm();
   };
 
-  const handleSelectEvent = (event: Event) => {
-    setSelectedEvent(event);
+  const handleSelectEvent = (event: LandingPageEvent) => {
+    // Convert LandingPageEvent to Event for internal use
+    const extendedEvent: Event = {
+      ...event,
+      _id: event.id, // Use id as _id for backward compatibility
+      eventType: event.eventType as PurposeType,
+    };
+    setSelectedEvent(extendedEvent);
     setCurrentView("eventDetails");
     setEventCreated(false);
   };
@@ -219,7 +269,7 @@ export default function AIEventManager() {
                     name: selectedEvent.name,
                     datetime: selectedEvent.datetime,
                     location: selectedEvent.location,
-                    eventType: selectedEvent.eventType as any,
+                    eventType: selectedEvent.eventType,
                     description: selectedEvent.description,
                   }}
                 />
@@ -230,7 +280,7 @@ export default function AIEventManager() {
                     name: selectedEvent.name,
                     datetime: selectedEvent.datetime,
                     location: selectedEvent.location,
-                    eventType: selectedEvent.eventType as any,
+                    eventType: selectedEvent.eventType,
                     description: selectedEvent.description,
                   }}
                   generatedBanners={generatedBanners}
@@ -240,25 +290,27 @@ export default function AIEventManager() {
                 />
               )}
               {activeTab === "registration" && (
-                <RegistrationFields
-                  registrationFields={registrationFields}
-                  newFieldName={newFieldName}
-                  onNewFieldNameChange={setNewFieldName}
-                  onAddField={addRegistrationField}
-                  onRemoveField={removeRegistrationField}
-                  onToggleRequired={toggleFieldRequired}
-                  eventData={{
-                    eventName: selectedEvent.name,
-                    dateTime: selectedEvent.datetime,
-                    location: selectedEvent.location,
-                    eventType: selectedEvent.eventType as any,
-                    description: selectedEvent.description,
-                    registrationFormUrl: selectedEvent.registrationFormUrl,
-                    registrationFormEditUrl:
-                      selectedEvent.registrationFormEditUrl,
-                  }}
-                  eventId={selectedEvent.id}
-                />
+                <div>
+                  <RegistrationFields
+                    registrationFields={registrationFields}
+                    newFieldName={newFieldName}
+                    onNewFieldNameChange={setNewFieldName}
+                    onAddField={addRegistrationField}
+                    onRemoveField={removeRegistrationField}
+                    onToggleRequired={toggleFieldRequired}
+                    eventData={{
+                      eventName: selectedEvent.name,
+                      dateTime: selectedEvent.datetime,
+                      location: selectedEvent.location,
+                      eventType: selectedEvent.eventType as PurposeType,
+                      description: selectedEvent.description,
+                      registrationFormUrl: selectedEvent.registrationFormUrl,
+                      registrationFormEditUrl:
+                        selectedEvent.registrationFormEditUrl,
+                    }}
+                    eventId={selectedEvent.id}
+                  />
+                </div>
               )}
               {activeTab === "reminders" && (
                 <AutomatedReminders
@@ -266,7 +318,7 @@ export default function AIEventManager() {
                     name: selectedEvent.name,
                     datetime: selectedEvent.datetime,
                     location: selectedEvent.location,
-                    eventType: selectedEvent.eventType as any,
+                    eventType: selectedEvent.eventType,
                     description: selectedEvent.description,
                   }}
                 />
@@ -277,7 +329,7 @@ export default function AIEventManager() {
                     name: selectedEvent.name,
                     datetime: selectedEvent.datetime,
                     location: selectedEvent.location,
-                    eventType: selectedEvent.eventType as any,
+                    eventType: selectedEvent.eventType,
                     description: selectedEvent.description,
                   }}
                 />
@@ -364,7 +416,7 @@ export default function AIEventManager() {
                     Event Created Successfully!
                   </h3>
                   <p className="text-green-400/80">
-                    Your event "{eventData.eventName}" has been created and
+                    Your event &quot;{eventData.eventName}&quot; has been created and
                     saved.
                   </p>
                 </div>
@@ -384,12 +436,34 @@ export default function AIEventManager() {
 
         {/* Event Creation Form - Only show if event hasn't been created */}
         {!eventCreated && (
-          <EventCreationForm
-            eventData={eventData}
-            onInputChange={handleInputChange}
-            onSubmit={handleEventSubmit}
-            isGenerating={isGenerating}
-          />
+          <>
+            <EventCreationForm
+              eventData={eventData}
+              onInputChange={handleInputChange}
+              onSubmit={handleEventSubmit}
+              isGenerating={isGenerating}
+            />
+            
+            {/* Enhanced Loading Indicator for Form Creation */}
+            {isGenerating && (
+              <div className="mt-8 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-2xl border border-cyan-400/20 p-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                  <h3 className="text-xl font-semibold text-cyan-300 mb-2">
+                    Creating Your Event & Registration Form
+                  </h3>
+                  <div className="space-y-2 text-sm text-cyan-200/80">
+                    <p>🎯 Setting up your event details...</p>
+                    <p>📋 Generating Google registration form...</p>
+                    <p>🔗 Configuring form URLs and permissions...</p>
+                    <p className="text-xs text-cyan-300/60 mt-4">
+                      This may take 30-60 seconds. Please wait while we create your complete event setup.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* AI Generated Content in Tabs - Show after event creation or form submission */}
@@ -432,7 +506,7 @@ export default function AIEventManager() {
                     name: eventData.eventName,
                     datetime: eventData.dateTime,
                     location: eventData.location,
-                    eventType: eventData.eventType as any,
+                    eventType: eventData.eventType,
                     description: eventData.description,
                   }}
                 />
@@ -443,7 +517,7 @@ export default function AIEventManager() {
                     name: eventData.eventName,
                     datetime: eventData.dateTime,
                     location: eventData.location,
-                    eventType: eventData.eventType as any,
+                    eventType: eventData.eventType,
                     description: eventData.description,
                   }}
                   generatedBanners={generatedBanners}
@@ -469,7 +543,7 @@ export default function AIEventManager() {
                     name: eventData.eventName,
                     datetime: eventData.dateTime,
                     location: eventData.location,
-                    eventType: eventData.eventType as any,
+                    eventType: eventData.eventType,
                     description: eventData.description,
                   }}
                 />
@@ -480,7 +554,7 @@ export default function AIEventManager() {
                     name: eventData.eventName,
                     datetime: eventData.dateTime,
                     location: eventData.location,
-                    eventType: eventData.eventType as any,
+                    eventType: eventData.eventType,
                     description: eventData.description,
                   }}
                 />

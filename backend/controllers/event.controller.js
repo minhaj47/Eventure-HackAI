@@ -7,7 +7,7 @@ import { extractAllContacts } from "../services/contactExtractionService.js";
 // Controller to add a new event
 export const addEvent = async (req, res) => {
   try {
-    const { eventName, dateTime, location, eventType, description } = req.body;
+    const { eventName, dateTime, location, eventType, description, organizerEmail, autoCreateForm = true } = req.body;
 
     // Basic validation
     if (!eventName || !dateTime || !location || !eventType) {
@@ -25,16 +25,132 @@ export const addEvent = async (req, res) => {
 
     // Save the event to the database
     const savedEvent = await newEvent.save();
+    
     // Add the event ID to the user's events array
     await User.findByIdAndUpdate(
       req.userId,
       { $push: { events: savedEvent._id } },
       { new: true }
     );
+
+    let formGenerationResult = null;
+    
+    // Auto-create registration form if requested (default: false)
+    if (autoCreateForm === true) {
+      console.log('=== STARTING AUTO FORM CREATION ===');
+      console.log('Event ID:', savedEvent._id);
+      console.log('Event Name:', eventName);
+      console.log('Organizer Email (provided):', organizerEmail);
+      console.log('User ID from request:', req.userId);
+      
+      try {
+        // Get user info for organizer email if not provided
+        let finalOrganizerEmail = organizerEmail;
+        if (!finalOrganizerEmail && req.userId) {
+          const user = await User.findById(req.userId);
+          finalOrganizerEmail = user?.email;
+          console.log('Retrieved user email from database:', finalOrganizerEmail);
+        }
+        console.log('Final organizer email to use:', finalOrganizerEmail);
+
+        console.log('=== CALLING GOOGLE FORM SERVICE ===');
+        // Create event registration form
+        const formResult = await googleFormService.createEventRegistrationForm({
+          title: eventName,
+          description: description,
+          organizerEmail: finalOrganizerEmail
+        });
+
+        console.log('=== GOOGLE FORM SERVICE RESPONSE ===');
+        console.log('Form creation success:', formResult.success);
+        console.log('Form result data:', JSON.stringify(formResult.data, null, 2));
+
+        console.log('=== CHECKING FORM RESULT SUCCESS ===');
+        console.log('Form result success:', formResult.success);
+        console.log('Form result data exists:', !!formResult.data);
+        console.log('Form URL exists:', !!formResult.data?.formUrl);
+        console.log('Form URL value:', formResult.data?.formUrl);
+        console.log('Edit Form URL value:', formResult.data?.editFormUrl);
+
+        if (formResult.success && formResult.data && formResult.data.formUrl && formResult.data.formUrl.trim() !== '') {
+          console.log('=== UPDATING EVENT WITH FORM URLS ===');
+          console.log('Registration Form URL:', formResult.data.formUrl);
+          console.log('Edit Form URL:', formResult.data.editFormUrl);
+          
+          // Update the event with the form URLs
+          const updatedEvent = await Event.findByIdAndUpdate(savedEvent._id, {
+            registrationFormUrl: formResult.data.formUrl,
+            registrationFormEditUrl: formResult.data.editFormUrl || formResult.data.formUrl
+          }, { new: true });
+          
+          console.log('=== EVENT UPDATE SUCCESSFUL ===');
+          console.log('Updated event registration form URL:', updatedEvent.registrationFormUrl);
+          console.log('Updated event edit form URL:', updatedEvent.registrationFormEditUrl);
+          
+          formGenerationResult = {
+            success: true,
+            formUrl: formResult.data.formUrl,
+            editFormUrl: formResult.data.editFormUrl || formResult.data.formUrl,
+            formId: formResult.data.formId
+          };
+          
+          console.log('=== FORM GENERATION RESULT ===');
+          console.log('Form generation result:', JSON.stringify(formGenerationResult, null, 2));
+
+          console.log('=== RETURNING SUCCESS RESPONSE ===');
+          // Respond with the saved event including form URLs
+          return res.status(201).json({
+            message: "success",
+            event: updatedEvent,
+            formGeneration: formGenerationResult
+          });
+        } else {
+          console.log('=== FORM CREATION FAILED - NO VALID FORM URL ===');
+          console.log('Reason for failure:');
+          console.log('- Success:', formResult.success);
+          console.log('- Has data:', !!formResult.data);
+          console.log('- Has formUrl:', !!formResult.data?.formUrl);
+          console.log('- FormUrl value:', formResult.data?.formUrl);
+          console.log('Complete form result:', JSON.stringify(formResult, null, 2));
+          
+          // Set form generation result as failed
+          formGenerationResult = {
+            success: false,
+            error: 'No valid form URL returned from SmythOS',
+            details: formResult
+          };
+        }
+      } catch (formError) {
+        console.error('=== FORM CREATION ERROR ===');
+        console.error('Error details:', formError);
+        console.error('Error message:', formError.message);
+        console.error('Error stack:', formError.stack);
+        
+        formGenerationResult = {
+          success: false,
+          error: formError.message || 'Failed to create registration form'
+        };
+        console.log('Form generation error result:', JSON.stringify(formGenerationResult, null, 2));
+        // Continue without failing the event creation
+      }
+    } else {
+      console.log('=== AUTO FORM CREATION DISABLED ===');
+      console.log('autoCreateForm is set to false');
+    }
+
     // Respond with the saved event
+    console.log('=== FINAL EVENT RESPONSE ===');
+    console.log('Event stored in database:');
+    console.log('- Event ID:', savedEvent._id);
+    console.log('- Event Name:', savedEvent.eventName);
+    console.log('- Registration Form URL:', savedEvent.registrationFormUrl || 'NOT SET');
+    console.log('- Edit Form URL:', savedEvent.registrationFormEditUrl || 'NOT SET');
+    console.log('- Form Generation Result:', JSON.stringify(formGenerationResult, null, 2));
+    
     res.status(201).json({
       message: "success",
-      event: savedEvent
+      event: savedEvent,
+      formGeneration: formGenerationResult
     });
   } catch (error) {
     console.error("Error creating event:", error);
@@ -55,6 +171,19 @@ export const getUserEvents = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
+    console.log('=== RETRIEVING USER EVENTS ===');
+    console.log('User ID:', userId);
+    console.log('Number of events found:', user.events.length);
+    
+    // Log form URLs for each event
+    user.events.forEach((event, index) => {
+      console.log(`Event ${index + 1}:`);
+      console.log(`- ID: ${event._id}`);
+      console.log(`- Name: ${event.eventName}`);
+      console.log(`- Registration Form URL: ${event.registrationFormUrl || 'NOT SET'}`);
+      console.log(`- Edit Form URL: ${event.registrationFormEditUrl || 'NOT SET'}`);
+    });
 
     res.status(200).json({
       message: "success",
@@ -351,16 +480,25 @@ export const generateEventRegistrationForm = async (req, res) => {
 
     // Update the event with the form URL
     if (result.success && result.data.formUrl) {
+      console.log('=== UPDATING EVENT WITH FORM URLS (GENERATE ENDPOINT) ===');
+      console.log('Event ID:', eventId);
+      console.log('Registration Form URL to store:', result.data.formUrl);
+      console.log('Edit Form URL to store:', result.data.editFormUrl || result.data.formUrl);
+      
       const updatedEvent = await Event.findByIdAndUpdate(eventId, {
         registrationFormUrl: result.data.formUrl,
         registrationFormEditUrl: result.data.editFormUrl || result.data.formUrl
       }, { new: true });
       
-      console.log('Updated event with form URLs:', {
-        eventId,
-        formUrl: result.data.formUrl,
-        editFormUrl: result.data.editFormUrl
-      });
+      console.log('=== EVENT UPDATE COMPLETE (GENERATE ENDPOINT) ===');
+      console.log('Stored registration form URL:', updatedEvent.registrationFormUrl);
+      console.log('Stored edit form URL:', updatedEvent.registrationFormEditUrl);
+      console.log('Full updated event:', JSON.stringify({
+        _id: updatedEvent._id,
+        eventName: updatedEvent.eventName,
+        registrationFormUrl: updatedEvent.registrationFormUrl,
+        registrationFormEditUrl: updatedEvent.registrationFormEditUrl
+      }, null, 2));
     }
 
     res.status(200).json({
@@ -375,9 +513,28 @@ export const generateEventRegistrationForm = async (req, res) => {
 
   } catch (error) {
     console.error('Event registration form generation error:', error);
-    res.status(error.status || 500).json({
+    
+    // Provide specific error messages for different error types
+    let errorMessage = 'Failed to generate event registration form';
+    let errorCode = error.status || 500;
+    
+    if (error.code === 'ETIMEDOUT' || error.message?.includes('timeout')) {
+      errorMessage = 'Form generation timed out. The SmythOS service may be temporarily unavailable. Please try again later.';
+      errorCode = 408; // Request Timeout
+    } else if (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED') {
+      errorMessage = 'Unable to connect to the form generation service. Please check your internet connection and try again.';
+      errorCode = 503; // Service Unavailable
+    } else if (error.isRetryableError && error.retryCount >= 3) {
+      errorMessage = 'Form generation failed after multiple attempts. The service may be temporarily unavailable. Please try again in a few minutes.';
+      errorCode = 503; // Service Unavailable
+    }
+    
+    res.status(errorCode).json({
       success: false,
-      message: error.error || error.message || 'Failed to generate event registration form'
+      message: errorMessage,
+      code: error.code,
+      retryCount: error.retryCount,
+      canRetry: error.isRetryableError && error.retryCount < 3
     });
   }
 };
@@ -397,6 +554,39 @@ export const checkGoogleFormConfig = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to check configuration'
+    });
+  }
+};
+
+// Test controller to debug form creation
+export const testFormCreation = async (req, res) => {
+  try {
+    console.log('=== TESTING FORM CREATION ===');
+    
+    // Test basic form creation
+    const testResult = await googleFormService.createGoogleForm({
+      formTitle: "Test Form - " + new Date().toISOString(),
+      formDescription: "This is a test form to debug form creation",
+      editorEmail: "test@example.com"
+    });
+
+    console.log('=== TEST FORM CREATION RESULT ===');
+    console.log('Result:', JSON.stringify(testResult, null, 2));
+
+    res.status(200).json({
+      success: true,
+      testResult,
+      message: 'Form creation test completed'
+    });
+
+  } catch (error) {
+    console.error('=== FORM CREATION TEST ERROR ===');
+    console.error('Error:', error);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Form creation test failed',
+      details: error
     });
   }
 };

@@ -48,11 +48,14 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
       });
       
       console.log("API Response:", response);
-      console.log("API Posters:", response.result.Output);
-      // Handle the SmythOS agent response format
       
+      // Handle the SmythOS agent response format - extract the Output object
+      if (response?.result?.Output) {
         setApiPosters(response.result.Output);
-        console.log("API Posters:", apiPosters);
+        console.log("API Posters:", response.result.Output);
+      } else {
+        throw new Error("Invalid response format");
+      }
       
     } catch (error) {
       console.error("Failed to load AI posters:", error);
@@ -61,8 +64,6 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
       setIsLoadingPoster(false);
     }
   };
-
-  
 
   const handleRefreshBanner = async (bannerId: number) => {
     if (onRefreshBanner) {
@@ -82,7 +83,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
 
   const downloadImage = async (imageUrl: string, filename: string) => {
     try {
-      const response = await fetch(`/api/proxy?url=${encodeURIComponent(imageUrl)}`);
+      const response = await fetch(imageUrl);
       console.log("Response:", response); 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -103,7 +104,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
       try {
         await navigator.share({
           title: `${eventData.name} Poster`,
-          url: `${window.location.origin}/api/proxy?url=${encodeURIComponent(imageUrl)}`,
+          url: imageUrl,
         });
       } catch (error) {
         console.error('Failed to share:', error);
@@ -111,7 +112,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
     } else {
       // Fallback: copy to clipboard
       try {
-        await navigator.clipboard.writeText(apiPosters.poster1.url);
+        await navigator.clipboard.writeText(imageUrl);
         alert('Image URL copied to clipboard!');
       } catch (error) {
         console.error('Failed to copy to clipboard:', error);
@@ -177,7 +178,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
               <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
                 <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
                   <img 
-                    src={`/api/proxy?url=${encodeURIComponent(apiPosters.poster1.url)}`} 
+                    src={apiPosters.poster1} 
                     alt="AI Generated Poster 1" 
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -190,13 +191,13 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <span className="text-sm text-gray-300">Professional Style</span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => downloadImage(apiPosters.poster1.url, `${eventData.name}-poster-1.jpg`)}
+                      onClick={() => downloadImage(apiPosters.poster1, `${eventData.name}-poster-1.jpg`)}
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Download className="h-4 w-4 text-white" />
                     </button>
                     <button
-                      onClick={() => shareImage(apiPosters.poster1.url)}
+                      onClick={() => shareImage(apiPosters.poster1)}
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Share2 className="h-4 w-4 text-white" />
@@ -210,7 +211,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
               <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
                 <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
                   <img 
-                    src={`/api/proxy?url=${encodeURIComponent(apiPosters.poster2.url)}`} 
+                    src={apiPosters.poster2} 
                     alt="AI Generated Poster 2" 
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -223,13 +224,13 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <span className="text-sm text-gray-300">Modern Style</span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => downloadImage(apiPosters.poster2.url, `${eventData.name}-poster-2.jpg`)}
+                      onClick={() => downloadImage(apiPosters.poster2, `${eventData.name}-poster-2.jpg`)}
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Download className="h-4 w-4 text-white" />
                     </button>
                     <button
-                      onClick={() => shareImage(apiPosters.poster2.url)}
+                      onClick={() => shareImage(apiPosters.poster2)}
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Share2 className="h-4 w-4 text-white" />
@@ -242,11 +243,9 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
             {apiPosters.poster3 && (
               <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
                 <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
-                <img 
-  src={`/api/proxy?url=${encodeURIComponent(apiPosters.poster3.url)}`} 
-  alt="Generated Poster" 
-
-                  
+                  <img 
+                    src={apiPosters.poster3} 
+                    alt="AI Generated Poster 3"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -258,13 +257,13 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <span className="text-sm text-gray-300">Creative Style</span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => downloadImage(apiPosters.poster3.url, `${eventData.name}-poster-3.jpg`)}
+                      onClick={() => downloadImage(apiPosters.poster3, `${eventData.name}-poster-3.jpg`)}
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Download className="h-4 w-4 text-white" />
                     </button>
                     <button
-                      onClick={() => shareImage(apiPosters.poster3.url)}
+                      onClick={() => shareImage(apiPosters.poster3)}
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Share2 className="h-4 w-4 text-white" />

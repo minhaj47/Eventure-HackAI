@@ -11,6 +11,7 @@ export interface BackendEvent {
   description?: string;
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
+  autoCreateForm?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -59,12 +60,18 @@ export const useEvents = () => {
       location: string;
       eventType: string;
       description?: string;
+      autoCreateForm?: boolean;
     }) => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/event/add`, {
+        // Create a timeout promise to prevent hanging (increased to 6 minutes total)
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout - form creation is taking longer than expected')), 360000); // 6 minutes
+        });
+
+        const fetchPromise = fetch(`${API_BASE_URL}/api/event/add`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -72,6 +79,8 @@ export const useEvents = () => {
           credentials: "include",
           body: JSON.stringify(eventData),
         });
+
+        const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
 
         if (!response.ok) {
           if (response.status === 401) {
@@ -82,6 +91,15 @@ export const useEvents = () => {
         }
 
         const data = await response.json();
+
+        console.log('=== CREATE EVENT RESPONSE ===');
+        console.log('Response data:', data);
+        console.log('Event data:', data.event);
+        console.log('Form generation:', data.formGeneration);
+
+        if (!data.event) {
+          throw new Error('No event data in response');
+        }
 
         // Add the new event to the local state
         setEvents((prev) => [data.event, ...prev]);

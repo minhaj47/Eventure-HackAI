@@ -1,24 +1,31 @@
 import express from "express"
 import {
     addEvent,
+    archiveForm,
     checkGoogleFormConfig,
     fetchEventParticipants,
     generateEventRegistrationForm,
     generateGoogleForm,
+    getEventFormAnalytics,
+    getFormsDashboard,
     getUserEvents,
+    getUserForms,
+    recordFormSubmission,
     sendBulkEventNotification,
     sendEventReminder,
     sendEventUpdate,
     testFormCreation,
+    trackFormView,
     updateEvent
 } from "../controllers/event.controller.js"
 import isAuth from "../middlewares/isAuth.js"
+
 
 const eventRouter = express.Router()
 
 // Existing routes
 eventRouter.get("/all",isAuth,getUserEvents)
-eventRouter.put("/update/:eventId",isAuth,updateEvent)
+eventRouter.put("/update/:eventId",isAuth,updateEvent) // Restore auth
 eventRouter.post("/add",isAuth,addEvent)
 eventRouter.get("/participants/:eventId",isAuth,fetchEventParticipants)
 
@@ -37,5 +44,15 @@ eventRouter.post("/generate-google-form", generateGoogleForm)
 eventRouter.post("/:eventId/generate-registration-form", generateEventRegistrationForm)
 eventRouter.get("/google-form-config", checkGoogleFormConfig)
 eventRouter.get("/test-form-creation", testFormCreation)
+
+// Enhanced form management routes (require authentication)
+eventRouter.get("/forms/dashboard", isAuth, getFormsDashboard)
+eventRouter.get("/forms/my-forms", isAuth, getUserForms)
+eventRouter.get("/:eventId/form-analytics", isAuth, getEventFormAnalytics)
+eventRouter.put("/forms/:formId/archive", isAuth, archiveForm)
+
+// Form interaction routes (NO authentication required for external access)
+eventRouter.post("/forms/:formId/submission", recordFormSubmission)
+eventRouter.post("/forms/:formId/track-view", trackFormView)
 
 export default eventRouter

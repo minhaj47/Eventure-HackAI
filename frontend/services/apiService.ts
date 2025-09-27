@@ -1,8 +1,16 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface Contact {
   name: string;
   email: string;
+}
+
+interface RawContact {
+  name?: string;
+  Name?: string;
+  email?: string;
+  Email?: string;
+  mail?: string;
 }
 
 export interface ContactExtractionResponse {
@@ -33,9 +41,77 @@ export const extractContacts = async (sheetLink: string): Promise<ContactExtract
     }
 
     const data = await response.json();
+    console.log('Extracted contacts data:', data);
     return data.data;
   } catch (error) {
     console.error('Error extracting contacts:', error);
+    throw error;
+  }
+};
+
+// Extract all contacts from Google Sheet for participants
+export const extractAllContactsFromSheet = async (sheetLink: string): Promise<Contact[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/extract_all_contacts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sheetLink })
+    });
+    console.log('Response from extract_all_contacts:', response);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Failed to extract contacts: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('Extracted all contacts data:', data);
+    console.log('this is the backend data format');
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to extract contacts');
+    }
+
+    // Handle the specific backend response format: data.result.Output.contacts.contacts
+    let contacts: Contact[] = [];
+    
+    if (data.data && data.data.result && data.data.result.Output && 
+        data.data.result.Output.contacts && Array.isArray(data.data.result.Output.contacts.contacts)) {
+      // This matches the actual backend format
+      contacts = data.data.result.Output.contacts.contacts;
+    } else if (typeof data.data === 'string') {
+      // If the response is a string, try to parse it as JSON
+      try {
+        const parsedData = JSON.parse(data.data);
+        if (parsedData.result && parsedData.result.Output && 
+            parsedData.result.Output.contacts && Array.isArray(parsedData.result.Output.contacts.contacts)) {
+          contacts = parsedData.result.Output.contacts.contacts;
+        } else if (parsedData.contacts && Array.isArray(parsedData.contacts)) {
+          contacts = parsedData.contacts;
+        } else if (Array.isArray(parsedData)) {
+          contacts = parsedData;
+        }
+      } catch {
+        console.warn('Could not parse contacts from text response');
+      }
+    } else if (data.data && typeof data.data === 'object') {
+      // Handle other object response formats
+      if (data.data.contacts && Array.isArray(data.data.contacts)) {
+        contacts = data.data.contacts;
+      } else if (Array.isArray(data.data)) {
+        contacts = data.data;
+      }
+    }
+
+    // Ensure contacts have the required structure
+    return contacts.map((contact: RawContact) => ({
+      name: contact.name || contact.Name || 'Unknown',
+      email: contact.email || contact.Email || contact.mail || ''
+    }));
+
+  } catch (error) {
+    console.error('Error extracting all contacts:', error);
     throw error;
   }
 };
@@ -48,6 +124,23 @@ export interface EmailGenerationRequest {
   tone?: string;
   callToAction?: string;
   suggestions?: string;
+}
+
+export interface ParsedEmail {
+  subject: string;
+  body: string;
+}
+
+export interface SendEmailToParticipantsRequest {
+  sheetLink: string;
+  emailSubject: string;
+  emailBody: string;
+}
+
+export interface SendSingleEmailRequest {
+  recipientEmail: string;
+  subject: string;
+  body: string;
 }
 
 export const generateEmailBody = async (
@@ -128,6 +221,90 @@ export const generateEmailBody = async (
       );
     }
 
+    throw error;
+  }
+};
+
+// Parse email content to extract subject and body
+export const parseEmailContent = (emailContent: string): ParsedEmail => {
+  const lines = emailContent.split('\n');
+  let subject = '';
+  let body = '';
+  let bodyStartIndex = 0;
+
+  // Look for subject line
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].toLowerCase().startsWith('subject:')) {
+      subject = lines[i].substring(8).trim(); // Remove 'Subject:' prefix
+      bodyStartIndex = i + 1;
+      break;
+    }
+  }
+
+  // Extract body (skip empty lines after subject)
+  while (bodyStartIndex < lines.length && lines[bodyStartIndex].trim() === '') {
+    bodyStartIndex++;
+  }
+  body = lines.slice(bodyStartIndex).join('\n').trim();
+
+  // If no subject found, use first line as subject or default
+  if (!subject && lines.length > 0) {
+    subject = lines[0].trim() || 'Event Notification';
+    body = lines.slice(1).join('\n').trim();
+  }
+
+  // Fallback if still no subject
+  if (!subject) {
+    subject = 'Event Notification';
+  }
+
+  return { subject, body: body || emailContent };
+};
+
+// Send emails to all participants via Google Sheet
+export const sendEmailToAllParticipants = async (data: SendEmailToParticipantsRequest): Promise<{success: boolean; message: string; data?: unknown}> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/event/send-update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to send emails: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error sending emails to participants:', error);
+    throw error;
+  }
+};
+
+// Send a single email to a specific recipient
+export const sendSingleEmail = async (data: SendSingleEmailRequest): Promise<{success: boolean; message: string; data?: unknown}> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/send_single_email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to send email: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error sending single email:', error);
     throw error;
   }
 };

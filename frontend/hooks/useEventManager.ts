@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Banner, BannerConfig, EventData, RegistrationField } from "../types";
-import { useEvents } from "./useEvents";
+import { useEvents, BackendEvent } from "./useEvents";
 
-export const useEventManager = (onEventCreated?: () => void) => {
+export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void) => {
   const { createEvent } = useEvents();
 
   const [eventData, setEventData] = useState<EventData>({
@@ -11,6 +11,7 @@ export const useEventManager = (onEventCreated?: () => void) => {
     location: "",
     description: "",
     eventType: "conference",
+    autoCreateForm: false,
   });
 
   const [showAIOutput, setShowAIOutput] = useState(false);
@@ -23,7 +24,7 @@ export const useEventManager = (onEventCreated?: () => void) => {
   >([
     { id: 1, name: "Full Name", type: "text", required: true },
     { id: 2, name: "Email Address", type: "email", required: true },
-    { id: 3, name: "Phone Number", type: "tel", required: false },
+    { id: 3, name: "WhatsApp Number", type: "tel", required: false },
     { id: 4, name: "Organization", type: "text", required: false },
   ]);
   const [newFieldName, setNewFieldName] = useState("");
@@ -35,23 +36,57 @@ export const useEventManager = (onEventCreated?: () => void) => {
     setIsGenerating(true);
 
     try {
-      // Create the actual event
-      await createEvent({
+      console.log('=== STARTING EVENT CREATION ===');
+      console.log('Event data to create:', eventData);
+      
+      // Create the actual event with automatic form generation
+      const newEvent = await createEvent({
         eventName: eventData.eventName,
         dateTime: eventData.dateTime,
         location: eventData.location,
         eventType: eventData.eventType,
         description: eventData.description,
+        autoCreateForm: eventData.autoCreateForm ?? false, // Default to false
       });
 
-      // Show AI output and call success callback
+      console.log('=== EVENT CREATION SUCCESS ===');
+      console.log('Created event:', newEvent);
+      console.log('Has form URLs:', {
+        registrationFormUrl: newEvent?.registrationFormUrl,
+        registrationFormEditUrl: newEvent?.registrationFormEditUrl
+      });
+
+      // The createEvent function already updates the local state with the new event
+      // No need to fetchEvents() again as it might cause authentication issues
+      
+      console.log('=== SHOWING AI OUTPUT AND CALLING CALLBACK ===');
+      // Show AI output and call success callback with the created event
       setShowAIOutput(true);
-      onEventCreated?.();
+      onEventCreated?.(newEvent); // Pass the created event to the callback
+      
+      console.log('=== EVENT CREATION FLOW COMPLETED ===');
     } catch (error) {
-      console.error("Failed to create event:", error);
-      // Still show AI output even if event creation fails for now
+      console.error("=== EVENT CREATION FAILED ===");
+      console.error("Error details:", error);
+      
+      // Determine error type and show appropriate message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      if (errorMessage.includes('timeout') || errorMessage.includes('network') || errorMessage.includes('ECONNRESET')) {
+        console.log('Network error detected - form creation may have failed');
+        // Still call the callback with a partial event if possible
+        onEventCreated?.();
+      } else {
+        console.log('Other error type:', errorMessage);
+      }
+      
+      // Show AI output even if event creation fails so user can still continue
       setShowAIOutput(true);
+      
+      // Also call the success callback to prevent the page from being stuck
+      onEventCreated?.();
     } finally {
+      console.log('=== SETTING isGenerating TO FALSE ===');
       setIsGenerating(false);
     }
   };
@@ -67,6 +102,7 @@ export const useEventManager = (onEventCreated?: () => void) => {
       location: "",
       description: "",
       eventType: "conference",
+      autoCreateForm: false,
     });
     setShowAIOutput(false);
   };
