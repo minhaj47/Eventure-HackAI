@@ -29,12 +29,16 @@ interface LandingPageEvent {
   createdAt: string;
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
+  classroomcode?: string;
+  classroomlink?: string;
 }
 
 // Extended Event interface for selected events with additional fields
 interface Event extends LandingPageEvent {
   _id: string;
   eventType: PurposeType;
+  classroomcode?: string;
+  classroomlink?: string;
 }
 
 export default function AIEventManager() {
@@ -68,6 +72,8 @@ export default function AIEventManager() {
       createdAt: new Date().toISOString(),
       registrationFormUrl: createdEvent.registrationFormUrl,
       registrationFormEditUrl: createdEvent.registrationFormEditUrl,
+      classroomcode: createdEvent.classroomcode,
+      classroomlink: createdEvent.classroomlink,
     };
     
     setSelectedEvent(formattedEvent);
@@ -331,7 +337,10 @@ export default function AIEventManager() {
                     location: selectedEvent.location,
                     eventType: selectedEvent.eventType,
                     description: selectedEvent.description,
+                    classroomcode: selectedEvent.classroomcode,
+                    classroomlink: selectedEvent.classroomlink,
                   }}
+                  eventId={selectedEvent._id}
                 />
               )}
             </div>
@@ -556,7 +565,10 @@ export default function AIEventManager() {
                     location: eventData.location,
                     eventType: eventData.eventType,
                     description: eventData.description,
+                    classroomcode: eventData.classroomcode,
+                    classroomlink: eventData.classroomlink,
                   }}
+                  eventId={undefined} // New events don't have ID yet
                 />
               )}
             </div>

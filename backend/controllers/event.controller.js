@@ -7,7 +7,16 @@ import { extractAllContacts } from "../services/contactExtractionService.js";
 // Controller to add a new event
 export const addEvent = async (req, res) => {
   try {
-    const { eventName, dateTime, location, eventType, description, organizerEmail, autoCreateForm = true } = req.body;
+    console.log('=== BACKEND addEvent CALLED ===');
+    console.log('Request body received:', JSON.stringify(req.body, null, 2));
+    
+    const { eventName, dateTime, location, eventType, description, organizerEmail, autoCreateForm = true, classroomcode, classroomlink } = req.body;
+
+    console.log('=== DESTRUCTURED CLASSROOM DATA ===');
+    console.log('classroomcode:', classroomcode);
+    console.log('classroomlink:', classroomlink);
+    console.log('classroomcode type:', typeof classroomcode);
+    console.log('classroomlink type:', typeof classroomlink);
 
     // Basic validation
     if (!eventName || !dateTime || !location || !eventType) {
@@ -15,16 +24,28 @@ export const addEvent = async (req, res) => {
     }
 
     // Create a new event instance
-    const newEvent = new Event({
+    const eventDataForDB = {
       eventName,
       dateTime,
       location,
       eventType,
-      description
-    });
+      description,
+      classroomcode,
+      classroomlink
+    };
+    
+    console.log('=== EVENT DATA FOR DATABASE ===');
+    console.log('Event object to be saved:', JSON.stringify(eventDataForDB, null, 2));
+    
+    const newEvent = new Event(eventDataForDB);
 
     // Save the event to the database
     const savedEvent = await newEvent.save();
+    
+    console.log('=== EVENT SAVED TO DATABASE ===');
+    console.log('Saved event:', JSON.stringify(savedEvent, null, 2));
+    console.log('Saved classroomcode:', savedEvent.classroomcode);
+    console.log('Saved classroomlink:', savedEvent.classroomlink);
     
     // Add the event ID to the user's events array
     await User.findByIdAndUpdate(
@@ -176,13 +197,15 @@ export const getUserEvents = async (req, res) => {
     console.log('User ID:', userId);
     console.log('Number of events found:', user.events.length);
     
-    // Log form URLs for each event
+    // Log form URLs and classroom data for each event
     user.events.forEach((event, index) => {
       console.log(`Event ${index + 1}:`);
       console.log(`- ID: ${event._id}`);
       console.log(`- Name: ${event.eventName}`);
       console.log(`- Registration Form URL: ${event.registrationFormUrl || 'NOT SET'}`);
       console.log(`- Edit Form URL: ${event.registrationFormEditUrl || 'NOT SET'}`);
+      console.log(`- Classroom Code: ${event.classroomcode || 'NOT SET'}`);
+      console.log(`- Classroom Link: ${event.classroomlink || 'NOT SET'}`);
     });
 
     res.status(200).json({
@@ -199,7 +222,7 @@ export const getUserEvents = async (req, res) => {
 export const updateEvent = async (req, res) => {
   try {
     const eventId = req.params.eventId; // event ID from URL
-    const { eventName, dateTime, location, eventType, description, attendeeSheetUrl } = req.body;
+    const { eventName, dateTime, location, eventType, description, attendeeSheetUrl, classroomcode, classroomlink } = req.body;
 
     console.log("=== UPDATE EVENT CALLED ===");
     console.log("Event ID received:", eventId);
@@ -242,6 +265,8 @@ export const updateEvent = async (req, res) => {
     if (eventType) event.eventType = eventType;
     if (description !== undefined) event.description = description;
     if (attendeeSheetUrl !== undefined) event.attendeeSheetUrl = attendeeSheetUrl;
+    if (classroomcode !== undefined) event.classroomcode = classroomcode;
+    if (classroomlink !== undefined) event.classroomlink = classroomlink;
 
     // Save the updated event
     const updatedEvent = await event.save();
@@ -643,6 +668,82 @@ export const fetchEventParticipants = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: "Failed to fetch participants from Google Sheet",
+      error: error.message 
+    });
+  }
+};
+
+// Controller to update classroom code and link for an event
+export const updateEventClassroom = async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+    const { classroomcode, classroomlink } = req.body;
+
+    console.log("=== UPDATE EVENT CLASSROOM CALLED ===");
+    console.log("Event ID:", eventId);
+    console.log("Classroom Code:", classroomcode);
+    console.log("Classroom Link:", classroomlink);
+
+    // Validate eventId format
+    
+
+    // Validate that at least one classroom field is provided
+    if (classroomcode === undefined && classroomlink === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide at least one field to update (classroomcode or classroomlink)"
+      });
+    }
+    console.log("Classroom update fields validated");
+    console.log("Classroomcode type:", typeof classroomcode);
+    console.log("Classroomlink type:", typeof classroomlink);
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+    
+    if (!event) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Event not found" 
+      });
+    }
+
+    // Prepare update object with only provided fields
+    const updateFields = {};
+    if (classroomcode !== undefined) {
+      updateFields.classroomcode = classroomcode;
+    }
+    if (classroomlink !== undefined) {
+      updateFields.classroomlink = classroomlink;
+    }
+
+    // Update the event with new classroom information
+    const updatedEvent = await Event.findByIdAndUpdate(
+      eventId,
+      updateFields,
+      { new: true, runValidators: true }
+    );
+
+    console.log("=== CLASSROOM UPDATE SUCCESSFUL ===");
+    console.log("Updated classroom code:", updatedEvent.classroomcode);
+    console.log("Updated classroom link:", updatedEvent.classroomlink);
+
+    res.status(200).json({
+      success: true,
+      message: "Classroom information updated successfully",
+      event: {
+        _id: updatedEvent._id,
+        eventName: updatedEvent.eventName,
+        classroomcode: updatedEvent.classroomcode,
+        classroomlink: updatedEvent.classroomlink,
+        updatedAt: updatedEvent.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error("Error updating event classroom:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error. Could not update classroom information.",
       error: error.message 
     });
   }

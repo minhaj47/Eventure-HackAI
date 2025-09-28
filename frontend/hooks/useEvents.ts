@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface BackendEvent {
   _id: string;
@@ -12,6 +12,8 @@ export interface BackendEvent {
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
   autoCreateForm?: boolean;
+  classroomcode?: string;
+  classroomlink?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,16 +63,28 @@ export const useEvents = () => {
       eventType: string;
       description?: string;
       autoCreateForm?: boolean;
+      classroomcode?: string;
+      classroomlink?: string;
     }) => {
       setIsLoading(true);
       setError(null);
 
       try {
+        console.log('=== useEvents createEvent CALLED ===');
+        console.log('Event data received in useEvents:', JSON.stringify(eventData, null, 2));
+        console.log('=== CLASSROOM DATA IN useEvents ===');
+        console.log('classroomcode:', eventData.classroomcode);
+        console.log('classroomlink:', eventData.classroomlink);
+        console.log('API_BASE_URL:', API_BASE_URL);
+        
         // Create a timeout promise to prevent hanging (increased to 6 minutes total)
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Request timeout - form creation is taking longer than expected')), 360000); // 6 minutes
         });
 
+        console.log('=== SENDING API REQUEST ===');
+        console.log('Request body:', JSON.stringify(eventData));
+        
         const fetchPromise = fetch(`${API_BASE_URL}/api/event/add`, {
           method: "POST",
           headers: {
@@ -96,6 +110,9 @@ export const useEvents = () => {
         console.log('Response data:', data);
         console.log('Event data:', data.event);
         console.log('Form generation:', data.formGeneration);
+        console.log('=== CLASSROOM DATA IN RESPONSE ===');
+        console.log('Response classroomcode:', data.event?.classroomcode);
+        console.log('Response classroomlink:', data.event?.classroomlink);
 
         if (!data.event) {
           throw new Error('No event data in response');

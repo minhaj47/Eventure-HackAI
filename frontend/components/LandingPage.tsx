@@ -32,6 +32,8 @@ interface Event {
   createdAt: string;
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
+  classroomcode?: string;
+  classroomlink?: string;
 }
 
 interface LandingPageProps {
@@ -62,6 +64,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     createdAt: event.createdAt,
     registrationFormUrl: event.registrationFormUrl,
     registrationFormEditUrl: event.registrationFormEditUrl,
+    classroomcode: event.classroomcode,
+    classroomlink: event.classroomlink,
   }));
 
   // Sync authentication and fetch events when user is authenticated
@@ -402,6 +406,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                           {event.eventType.charAt(0).toUpperCase() +
                             event.eventType.slice(1)}
                         </span>
+                        {event.classroomcode && (
+                          <span className="px-2 py-1 bg-green-900/30 text-green-300 border border-green-500/30 rounded-full text-xs font-medium">
+                            📚 Classroom
+                          </span>
+                        )}
                       </div>
                       <p className="text-white/80 text-sm mb-3 line-clamp-2">
                         {event.description ||

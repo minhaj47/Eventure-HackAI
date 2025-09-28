@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8000";
 
 export interface Contact {
   name: string;
@@ -305,6 +305,59 @@ export const sendSingleEmail = async (data: SendSingleEmailRequest): Promise<{su
     return result;
   } catch (error) {
     console.error('Error sending single email:', error);
+    throw error;
+  }
+};
+
+// Update classroom data for an event
+export interface UpdateClassroomRequest {
+  classroomcode?: string;
+  classroomlink?: string;
+}
+
+export interface UpdateClassroomResponse {
+  success: boolean;
+  message: string;
+  event?: {
+    _id: string;
+    eventName: string;
+    classroomcode?: string;
+    classroomlink?: string;
+    updatedAt: string;
+  };
+}
+
+export const updateEventClassroom = async (eventId: string, data: UpdateClassroomRequest): Promise<UpdateClassroomResponse> => {
+  try {
+    console.log('=== updateEventClassroom API CALL ===');
+    console.log('Event ID:', eventId);
+    console.log('Classroom data:', data);
+
+    const response = await fetch(`${API_BASE_URL}/api/event/update-classroom/${eventId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    
+      body: JSON.stringify(data)
+    });
+
+    console.log('=== API RESPONSE ===');
+    console.log('Status:', response.status);
+    console.log('OK:', response.ok);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API Error:', errorData);
+      throw new Error(errorData.message || `Failed to update classroom: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('=== API SUCCESS RESULT ===');
+    console.log('Result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error updating classroom:', error);
     throw error;
   }
 };

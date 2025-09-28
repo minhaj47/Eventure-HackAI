@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { createClassroom } from "../services/contentGenerationApi";
+import { updateEventClassroom } from "../services/apiService";
 import { Card } from "./ui";
 
 interface ClassroomManagementProps {
@@ -20,14 +21,10 @@ interface ClassroomManagementProps {
     datetime: string;
     location: string;
     description: string;
+    classroomcode?: string;
+    classroomlink?: string;
   };
-}
-
-interface ClassroomDetails {
-  className: string;
-  classCode: string;
-  classLink: string;
-  instructions: string;
+  eventId?: string;
 }
 
 interface Classroom {
@@ -43,8 +40,25 @@ interface Classroom {
 
 export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
   eventData,
+  eventId,
 }) => {
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
+  // Initialize with existing classroom data if available
+  const [classrooms, setClassrooms] = useState<Classroom[]>(
+    eventData.classroomcode && eventData.classroomlink
+      ? [
+          {
+            id: "existing-classroom",
+            name: `${eventData.name} Classroom`,
+            code: eventData.classroomcode,
+            link: eventData.classroomlink,
+            description: `Classroom for ${eventData.name}`,
+            createdAt: new Date().toISOString(),
+            participantCount: 0,
+            status: "active" as const,
+          },
+        ]
+      : []
+  );
   const [isCreatingClassroom, setIsCreatingClassroom] = useState(false);
   const [selectedClassroom, setSelectedClassroom] = useState<Classroom | null>(
     null
@@ -69,30 +83,61 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
     setCreateError(null);
 
     try {
-      const result = await createClassroom({
+      const response = await createClassroom({
         className: newClassroom.name,
         description:
           newClassroom.description || `Classroom for ${eventData.name}`,
         email: newClassroom.email,
       });
 
-      // Add the created classroom to the list (mock structure since API response format isn't specified)
+      // Add the created classroom to the list
+      const classroomDetails = response.result?.Output?.classroomDetails;
       const newClassroomItem: Classroom = {
-        id: `classroom_${Date.now()}`,
-        name: newClassroom.name,
-        code: `CLASS${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-        description:
-          newClassroom.description || `Classroom for ${eventData.name}`,
+        id: response.id || Date.now().toString(),
+        name: classroomDetails?.className || newClassroom.name,
+        code: classroomDetails?.classCode || '',
+        link: classroomDetails?.classLink || '',
+        description: classroomDetails?.instructions || newClassroom.description,
         createdAt: new Date().toISOString(),
         participantCount: 0,
         status: "active",
       };
 
       setClassrooms((prev) => [newClassroomItem, ...prev]);
-      setNewClassroom({ name: "", description: "", email: "" });
 
-      alert("Classroom created successfully!");
-      console.log("Classroom creation result:", result);
+      // Save classroom data to the event if eventId is provided
+      if (eventId && newClassroomItem.code && newClassroomItem.link) {
+        try {
+          console.log('=== SAVING CLASSROOM DATA TO EVENT ===');
+          console.log('Event ID:', eventId);
+          console.log('Classroom Code:', newClassroomItem.code);
+          console.log('Classroom Link:', newClassroomItem.link);
+
+          const updateResult = await updateEventClassroom(eventId, {
+            classroomcode: newClassroomItem.code,
+            classroomlink: newClassroomItem.link,
+          });
+
+          console.log('=== CLASSROOM DATA SAVED TO EVENT ===');
+          console.log('Update result:', updateResult);
+
+          if (updateResult.success) {
+            alert("Classroom created and saved to event successfully!");
+          } else {
+            alert("Classroom created, but failed to save to event. You can update it manually.");
+          }
+        } catch (error) {
+          console.error('Failed to save classroom data to event:', error);
+          alert("Classroom created, but failed to save to event. You can update it manually.");
+        }
+      } else {
+        alert("Classroom created successfully!");
+      }
+
+      // Reset form after successful creation
+      setNewClassroom({ name: "", description: "", email: "" });
+      
+      console.log("Classroom creation result:", response);
     } catch (error) {
       console.error("Failed to create classroom:", error);
       setCreateError("Failed to create classroom. Please try again.");
@@ -108,33 +153,6 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
     useState(false);
   const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false);
 
-  const generateClassroomCode = () => {
-    return Math.random().toString(36).substr(2, 8).toUpperCase();
-  };
-
-  const createMockClassroom = async () => {
-    if (!newClassroom.name.trim()) return;
-
-    setIsCreatingClassroom(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    const classroom: Classroom = {
-      id: Date.now().toString(),
-      name: newClassroom.name,
-      code: generateClassroomCode(),
-      description:
-        newClassroom.description || `Virtual classroom for ${eventData.name}`,
-      createdAt: new Date().toISOString(),
-      participantCount: 0,
-      status: "active",
-    };
-
-    setClassrooms((prev) => [...prev, classroom]);
-    setSelectedClassroom(classroom);
-    setNewClassroom({ name: "", description: "", email: "" });
-    setIsCreatingClassroom(false);
-  };
-
   const copyClassroomCode = async (code: string) => {
     try {
       await navigator.clipboard.writeText(code);
@@ -149,11 +167,13 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
     if (!selectedClassroom) return;
 
     setIsGeneratingAnnouncement(true);
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      // Simulate API call - replace with actual announcement generation API
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    const announcementTemplate = `📢 Important Announcement for ${
-      selectedClassroom.name
-    }
+      const announcementTemplate = `📢 Important Announcement for ${
+        selectedClassroom.name
+      }
 
 ${announcementPrompt || `Welcome to our ${eventData.eventType} classroom!`}
 
@@ -189,32 +209,58 @@ The Event Team
 Classroom Code: ${selectedClassroom.code}
 Event: ${eventData.name}`;
 
-    setGeneratedAnnouncement(announcementTemplate);
-    setIsGeneratingAnnouncement(false);
+      setGeneratedAnnouncement(announcementTemplate);
+    } catch (error) {
+      console.error("Failed to generate announcement:", error);
+      // Handle error appropriately
+    } finally {
+      setIsGeneratingAnnouncement(false);
+    }
   };
 
   const sendAnnouncement = async () => {
     if (!generatedAnnouncement || !selectedClassroom) return;
 
     setIsSendingAnnouncement(true);
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-    setIsSendingAnnouncement(false);
-
-    // Reset form after sending
-    setAnnouncementPrompt("");
-    setGeneratedAnnouncement("");
+    try {
+      // Simulate API call - replace with actual announcement sending API
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      
+      // Show success message
+      alert("Announcement sent successfully!");
+      
+      // Reset form after sending
+      setAnnouncementPrompt("");
+      setGeneratedAnnouncement("");
+    } catch (error) {
+      console.error("Failed to send announcement:", error);
+      alert("Failed to send announcement. Please try again.");
+    } finally {
+      setIsSendingAnnouncement(false);
+    }
   };
+
+  const handleCreateNew = () => {
+    setClassrooms([]);
+    setSelectedClassroom(null);
+    setNewClassroom({ name: "", description: "", email: "" });
+    setCreateError(null);
+  };
+
+  // Removed manual classroom update functionality due to backend connectivity issues
 
   return (
     <Card title="Classroom Management" icon={<BookOpen className="h-6 w-6" />}>
       <div className="space-y-6">
+        {/* Manual classroom update section removed due to backend connectivity issues */}
+
         {/* Classroom Creation Section */}
         {classrooms.length === 0 ? (
           <div className="p-8 bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-2xl border border-blue-500/20 text-center">
             <h3 className="text-xl font-bold text-white mb-2">
               Create a Google Classroom
             </h3>
-            <p className="text-white-300 text-xl font-smooth-sans mb-6">
+            <p className="text-gray-300 text-lg mb-6">
               Set up a dedicated space for your event participants to
               collaborate and engage.
             </p>
@@ -270,12 +316,12 @@ Event: ${eventData.name}`;
               <button
                 onClick={handleCreateClassroom}
                 disabled={isCreatingClassroom || !newClassroom.name.trim()}
-                className="w-full px-6 py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2"
+                className="w-full px-6 py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
               >
                 {isCreatingClassroom && (
                   <RefreshCw className="h-4 w-4 animate-spin" />
                 )}
-                {isCreatingClassroom ? "Creating Classroom..." : "Create "}
+                {isCreatingClassroom ? "Creating Classroom..." : "Create Classroom"}
               </button>
             </div>
           </div>
@@ -289,8 +335,8 @@ Event: ${eventData.name}`;
                   Your Classrooms ({classrooms.length})
                 </h3>
                 <button
-                  onClick={() => setClassrooms([])}
-                  className="text-sm text-gray-400 hover:text-gray-300 flex items-center gap-1"
+                  onClick={handleCreateNew}
+                  className="text-sm text-gray-400 hover:text-gray-300 flex items-center gap-1 transition-colors duration-200"
                 >
                   <Plus className="h-3 w-3" />
                   Create New
@@ -323,6 +369,78 @@ Event: ${eventData.name}`;
                           {classroom.status}
                         </span>
                       </div>
+                      {/* Join Classroom Link - Copy and Share */}
+                      {classroom.link && (
+                        <div className="mb-3 space-y-2">
+                          {/* Copy Link Button */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyClassroomCode(classroom.link);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg transition-all duration-200 text-sm"
+                            >
+                              {copiedCode === classroom.link ? (
+                                <Check className="h-3 w-3 text-green-400" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                              {copiedCode === classroom.link ? 'Copied!' : 'Copy Join Link'}
+                            </button>
+                          </div>
+                          
+                          {/* Share Options */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400">Share:</span>
+                            
+                            {/* WhatsApp Share */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const message = `Join our classroom "${classroom.name}" using this link: ${classroom.link}`;
+                                window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+                              }}
+                              className="p-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition-all duration-200"
+                              title="Share on WhatsApp"
+                            >
+                              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                              </svg>
+                            </button>
+
+                            {/* Telegram Share */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const message = `Join our classroom "${classroom.name}" using this link: ${classroom.link}`;
+                                window.open(`https://t.me/share/url?url=${encodeURIComponent(classroom.link)}&text=${encodeURIComponent(message)}`, '_blank');
+                              }}
+                              className="p-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-all duration-200"
+                              title="Share on Telegram"
+                            >
+                              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                              </svg>
+                            </button>
+
+                            {/* Facebook Share */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(classroom.link)}`, '_blank');
+                              }}
+                              className="p-2 bg-blue-700/20 hover:bg-blue-700/30 text-blue-400 rounded-lg transition-all duration-200"
+                              title="Share on Facebook"
+                            >
+                              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Description/Instructions */}
                       <p className="text-gray-400 text-sm mb-3">
                         {classroom.description}
                       </p>
@@ -350,6 +468,7 @@ Event: ${eventData.name}`;
                               copyClassroomCode(classroom.code);
                             }}
                             className="p-2 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-lg transition-all duration-200"
+                            title="Copy classroom code"
                           >
                             {copiedCode === classroom.code ? (
                               <Check className="h-4 w-4 text-green-400" />
@@ -369,9 +488,9 @@ Event: ${eventData.name}`;
             {selectedClassroom && (
               <div className="p-6 bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-2xl border border-purple-500/20">
                 <div className="flex items-center justify-between mb-6">
-                  <h4 className="text-lg font-tomorrow text-white flex items-center gap-2">
+                  <h4 className="text-lg font-semibold text-white flex items-center gap-2">
                     <MessageSquare className="h-5 w-5 text-purple-400" />
-                    Generate and send Announcements with AI
+                    Generate and Send Announcements with AI
                   </h4>
                 </div>
 
@@ -388,7 +507,7 @@ Event: ${eventData.name}`;
                     <button
                       onClick={generateAnnouncement}
                       disabled={isGeneratingAnnouncement}
-                      className="px-6 py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center gap-2"
+                      className="px-6 py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
                     >
                       {isGeneratingAnnouncement ? (
                         <RefreshCw className="h-4 w-4 animate-spin" />
@@ -410,7 +529,7 @@ Event: ${eventData.name}`;
                       <button
                         onClick={sendAnnouncement}
                         disabled={isSendingAnnouncement}
-                        className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/30 rounded-lg disabled:opacity-50 transition-all duration-200 flex items-center gap-2"
+                        className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-300 border border-green-500/30 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
                       >
                         {isSendingAnnouncement ? (
                           <RefreshCw className="h-3 w-3 animate-spin" />

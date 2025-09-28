@@ -7,6 +7,8 @@ export interface EventData {
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
   autoCreateForm?: boolean;
+  classroomcode?: string;
+  classroomlink?: string;
 }
 
 // Legacy interface for compatibility

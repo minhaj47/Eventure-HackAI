@@ -36,6 +36,14 @@ const eventSchema = new mongoose.Schema(
     attendeeSheetUrl: {
       type: String,
       trim: true
+    },
+    classroomcode: {
+      type: String,
+      trim: true
+    },
+    classroomlink: {
+      type: String,
+      trim: true
     }
   },
   { timestamps: true }

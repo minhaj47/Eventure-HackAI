@@ -77,6 +77,28 @@ export const EventCreationForm: React.FC<EventCreationFormProps> = ({
         />
       </div>
 
+      <Input
+        label="Classroom Code"
+        value={eventData.classroomcode || ""}
+        onChange={(v) => {
+          console.log('=== CLASSROOM CODE INPUT CHANGE ===');
+          console.log('New classroom code value:', v);
+          onInputChange("classroomcode", v);
+        }}
+        placeholder="e.g., ROOM123 (optional)"
+      />
+
+      <Input
+        label="Classroom Link"
+        value={eventData.classroomlink || ""}
+        onChange={(v) => {
+          console.log('=== CLASSROOM LINK INPUT CHANGE ===');
+          console.log('New classroom link value:', v);
+          onInputChange("classroomlink", v);
+        }}
+        placeholder="e.g., https://classroom.google.com/c/abc123 (optional)"
+      />
+
     </div>
 
     <div className="mt-8 flex justify-center">
