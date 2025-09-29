@@ -4,6 +4,32 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Logs
+*.log
+server.log
+logs/
+
+# macOS
+.DS_Store
+.DS_Store?
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+dist/
+build/
+out/
+
 # Test directories and files
 test/
 **/test/
