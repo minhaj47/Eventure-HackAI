@@ -29,6 +29,7 @@ interface LandingPageEvent {
   createdAt: string;
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
+  className?: string;
   classroomcode?: string;
   classroomlink?: string;
 }
@@ -37,6 +38,7 @@ interface LandingPageEvent {
 interface Event extends LandingPageEvent {
   _id: string;
   eventType: PurposeType;
+  className?: string;
   classroomcode?: string;
   classroomlink?: string;
 }
@@ -72,6 +74,7 @@ export default function AIEventManager() {
       createdAt: new Date().toISOString(),
       registrationFormUrl: createdEvent.registrationFormUrl,
       registrationFormEditUrl: createdEvent.registrationFormEditUrl,
+      className: createdEvent.className,
       classroomcode: createdEvent.classroomcode,
       classroomlink: createdEvent.classroomlink,
     };
@@ -125,6 +128,7 @@ export default function AIEventManager() {
       ...event,
       _id: event.id, // Use id as _id for backward compatibility
       eventType: event.eventType as PurposeType,
+      className: event.className, // Ensure className is passed through
     };
     setSelectedEvent(extendedEvent);
     setCurrentView("eventDetails");
@@ -337,6 +341,7 @@ export default function AIEventManager() {
                     location: selectedEvent.location,
                     eventType: selectedEvent.eventType,
                     description: selectedEvent.description,
+                    className: selectedEvent.className,
                     classroomcode: selectedEvent.classroomcode,
                     classroomlink: selectedEvent.classroomlink,
                   }}
@@ -565,6 +570,7 @@ export default function AIEventManager() {
                     location: eventData.location,
                     eventType: eventData.eventType,
                     description: eventData.description,
+                    className: eventData.className,
                     classroomcode: eventData.classroomcode,
                     classroomlink: eventData.classroomlink,
                   }}

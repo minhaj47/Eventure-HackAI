@@ -7,6 +7,7 @@ export interface EventData {
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
   autoCreateForm?: boolean;
+  className?: string;
   classroomcode?: string;
   classroomlink?: string;
 }

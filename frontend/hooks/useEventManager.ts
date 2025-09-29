@@ -12,8 +12,6 @@ export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void)
     description: "",
     eventType: "conference",
     autoCreateForm: false,
-    classroomcode: "",
-    classroomlink: "",
   });
 
   const [showAIOutput, setShowAIOutput] = useState(false);
@@ -40,11 +38,7 @@ export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void)
     try {
       console.log('=== STARTING EVENT CREATION ===');
       console.log('Event data to create:', eventData);
-      console.log('=== CLASSROOM DATA CHECK ===');
-      console.log('Classroom Code:', eventData.classroomcode);
-      console.log('Classroom Link:', eventData.classroomlink);
-      console.log('Classroom Code type:', typeof eventData.classroomcode);
-      console.log('Classroom Link type:', typeof eventData.classroomlink);
+
       
       const apiPayload = {
         eventName: eventData.eventName,
@@ -53,11 +47,7 @@ export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void)
         eventType: eventData.eventType,
         description: eventData.description,
         autoCreateForm: eventData.autoCreateForm ?? false, // Default to false
-        classroomcode: eventData.classroomcode,
-        classroomlink: eventData.classroomlink,
-      };
-      
-      console.log('=== API PAYLOAD ===');
+      };      console.log('=== API PAYLOAD ===');
       console.log('Full payload being sent to API:', JSON.stringify(apiPayload, null, 2));
       
       // Create the actual event with automatic form generation
@@ -109,18 +99,11 @@ export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void)
     console.log('=== handleInputChange CALLED ===');
     console.log('Field:', field);
     console.log('Value:', value);
-    console.log('Is classroom field:', field === 'classroomcode' || field === 'classroomlink');
     
     setEventData((prev) => {
       const newData = { ...prev, [field]: value };
       console.log('=== UPDATED EVENT DATA ===');
       console.log('New eventData:', newData);
-      if (field === 'classroomcode' || field === 'classroomlink') {
-        console.log('Updated classroom data:', {
-          classroomcode: newData.classroomcode,
-          classroomlink: newData.classroomlink
-        });
-      }
       return newData;
     });
   };
@@ -133,8 +116,6 @@ export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void)
       description: "",
       eventType: "conference",
       autoCreateForm: false,
-      classroomcode: "",
-      classroomlink: "",
     });
     setShowAIOutput(false);
   };

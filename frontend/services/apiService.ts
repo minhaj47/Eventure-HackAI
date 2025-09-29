@@ -311,8 +311,10 @@ export const sendSingleEmail = async (data: SendSingleEmailRequest): Promise<{su
 
 // Update classroom data for an event
 export interface UpdateClassroomRequest {
+  className?:string;
   classroomcode?: string;
   classroomlink?: string;
+
 }
 
 export interface UpdateClassroomResponse {
@@ -358,6 +360,61 @@ export const updateEventClassroom = async (eventId: string, data: UpdateClassroo
     return result;
   } catch (error) {
     console.error('Error updating classroom:', error);
+    throw error;
+  }
+};
+
+// Send announcement to classroom
+export interface ClassroomAnnouncementRequest {
+  className: string; // Frontend uses className which becomes courseName in backend
+  announcementText: string;
+  materials?: string[];
+}
+
+export interface ClassroomAnnouncementResponse {
+  success: boolean;
+  message: string;
+  data?: unknown;
+}
+
+export const sendClassroomAnnouncement = async (data: ClassroomAnnouncementRequest): Promise<ClassroomAnnouncementResponse> => {
+  try {
+    console.log('=== sendClassroomAnnouncement API CALL ===');
+    console.log('Announcement data:', data);
+
+    // Map className to courseName for backend compatibility
+    const backendPayload = {
+      courseName: data.className,
+      announcementText: data.announcementText,
+      materials: data.materials
+    };
+
+    console.log('Backend payload:', backendPayload);
+
+    const response = await fetch(`${API_BASE_URL}/api/add_classroom_announcement`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(backendPayload)
+    });
+
+    console.log('=== CLASSROOM ANNOUNCEMENT API RESPONSE ===');
+    console.log('Status:', response.status);
+    console.log('OK:', response.ok);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API Error:', errorData);
+      throw new Error(errorData.error || errorData.message || `Failed to send announcement: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('=== ANNOUNCEMENT API SUCCESS RESULT ===');
+    console.log('Result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error sending classroom announcement:', error);
     throw error;
   }
 };

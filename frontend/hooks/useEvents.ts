@@ -12,6 +12,7 @@ export interface BackendEvent {
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
   autoCreateForm?: boolean;
+  className?: string;
   classroomcode?: string;
   classroomlink?: string;
   createdAt: string;
@@ -63,6 +64,7 @@ export const useEvents = () => {
       eventType: string;
       description?: string;
       autoCreateForm?: boolean;
+      className?: string;
       classroomcode?: string;
       classroomlink?: string;
     }) => {

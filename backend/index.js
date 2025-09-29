@@ -9,6 +9,7 @@ import userRouter from "./routes/user.routes.js"
 import emailRouter from "./routes/email.routes.js"
 import contactRouter from "./routes/contact.routes.js"
 import proxyRouter from "./routes/proxy.routes.js"
+import classroomRouter from "./routes/classroom.routes.js"
 dotenv.config()
 
 const app = express()
@@ -35,6 +36,7 @@ app.use("/api/event",eventRouter)
 app.use("/api",emailRouter)
 app.use("/api",contactRouter)
 app.use("/api/proxy", proxyRouter)
+app.use("/api", classroomRouter)
 
 app.listen(port,()=>{
     connectDB()

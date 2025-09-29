@@ -10,11 +10,13 @@ export const addEvent = async (req, res) => {
     console.log('=== BACKEND addEvent CALLED ===');
     console.log('Request body received:', JSON.stringify(req.body, null, 2));
     
-    const { eventName, dateTime, location, eventType, description, organizerEmail, autoCreateForm = true, classroomcode, classroomlink } = req.body;
+    const { eventName, dateTime, location, eventType, description, organizerEmail, autoCreateForm = true, className, classroomcode, classroomlink } = req.body;
 
     console.log('=== DESTRUCTURED CLASSROOM DATA ===');
+    console.log('className:', className);
     console.log('classroomcode:', classroomcode);
     console.log('classroomlink:', classroomlink);
+    console.log('className type:', typeof className);
     console.log('classroomcode type:', typeof classroomcode);
     console.log('classroomlink type:', typeof classroomlink);
 
@@ -30,6 +32,7 @@ export const addEvent = async (req, res) => {
       location,
       eventType,
       description,
+      className,
       classroomcode,
       classroomlink
     };
@@ -204,6 +207,7 @@ export const getUserEvents = async (req, res) => {
       console.log(`- Name: ${event.eventName}`);
       console.log(`- Registration Form URL: ${event.registrationFormUrl || 'NOT SET'}`);
       console.log(`- Edit Form URL: ${event.registrationFormEditUrl || 'NOT SET'}`);
+      console.log(`- Class Name: ${event.className || 'NOT SET'}`);
       console.log(`- Classroom Code: ${event.classroomcode || 'NOT SET'}`);
       console.log(`- Classroom Link: ${event.classroomlink || 'NOT SET'}`);
     });
@@ -222,7 +226,7 @@ export const getUserEvents = async (req, res) => {
 export const updateEvent = async (req, res) => {
   try {
     const eventId = req.params.eventId; // event ID from URL
-    const { eventName, dateTime, location, eventType, description, attendeeSheetUrl, classroomcode, classroomlink } = req.body;
+    const { eventName, dateTime, location, eventType, description, attendeeSheetUrl, className, classroomcode, classroomlink } = req.body;
 
     console.log("=== UPDATE EVENT CALLED ===");
     console.log("Event ID received:", eventId);
@@ -265,6 +269,7 @@ export const updateEvent = async (req, res) => {
     if (eventType) event.eventType = eventType;
     if (description !== undefined) event.description = description;
     if (attendeeSheetUrl !== undefined) event.attendeeSheetUrl = attendeeSheetUrl;
+    if (className !== undefined) event.className = className;
     if (classroomcode !== undefined) event.classroomcode = classroomcode;
     if (classroomlink !== undefined) event.classroomlink = classroomlink;
 
@@ -677,21 +682,22 @@ export const fetchEventParticipants = async (req, res) => {
 export const updateEventClassroom = async (req, res) => {
   try {
     const eventId = req.params.eventId;
-    const { classroomcode, classroomlink } = req.body;
+    const {className,classroomcode, classroomlink } = req.body;
 
     console.log("=== UPDATE EVENT CLASSROOM CALLED ===");
     console.log("Event ID:", eventId);
     console.log("Classroom Code:", classroomcode);
     console.log("Classroom Link:", classroomlink);
+    console.log("Class Name:", className);
 
     // Validate eventId format
     
 
     // Validate that at least one classroom field is provided
-    if (classroomcode === undefined && classroomlink === undefined) {
+    if (className === undefined && classroomcode === undefined && classroomlink === undefined) {
       return res.status(400).json({
         success: false,
-        message: "Please provide at least one field to update (classroomcode or classroomlink)"
+        message: "Please provide at least one field to update (className, classroomcode, or classroomlink)"
       });
     }
     console.log("Classroom update fields validated");
@@ -715,6 +721,11 @@ export const updateEventClassroom = async (req, res) => {
     if (classroomlink !== undefined) {
       updateFields.classroomlink = classroomlink;
     }
+    if (className !== undefined) {
+      updateFields.className = className;
+    }
+
+    console.log("Update fields prepared:", updateFields);
 
     // Update the event with new classroom information
     const updatedEvent = await Event.findByIdAndUpdate(
@@ -724,6 +735,7 @@ export const updateEventClassroom = async (req, res) => {
     );
 
     console.log("=== CLASSROOM UPDATE SUCCESSFUL ===");
+    console.log("Updated class name:", updatedEvent.className);
     console.log("Updated classroom code:", updatedEvent.classroomcode);
     console.log("Updated classroom link:", updatedEvent.classroomlink);
 
@@ -733,6 +745,7 @@ export const updateEventClassroom = async (req, res) => {
       event: {
         _id: updatedEvent._id,
         eventName: updatedEvent.eventName,
+        className: updatedEvent.className,
         classroomcode: updatedEvent.classroomcode,
         classroomlink: updatedEvent.classroomlink,
         updatedAt: updatedEvent.updatedAt

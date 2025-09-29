@@ -1,60 +1,59 @@
 import mongoose from "mongoose";
 
-const eventSchema = new mongoose.Schema(
+const courseSchema = new mongoose.Schema(
   {
-    eventName: {
+    courseName: {
       type: String,
       required: true,
-      trim: true
-    },
-    dateTime: {
-      type: Date,
-      required: true
-    },
-    location: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    eventType: {
-      type: String,
-      required: true,
-    }
-    ,
-    description: {
-      type: String,
-      trim: true
-    },
-    registrationFormUrl: {
-      type: String,
-      trim: true
-    },
-    registrationFormEditUrl: {
-      type: String,
-      trim: true
-    },
-    attendeeSheetUrl: {
-      type: String,
       trim: true
     },
     className: {
       type: String,
+      required: true,
       trim: true
     },
-    classroomcode: {
+    courseId: {
+      type: String,
+      unique: true,
+      trim: true
+    },
+    description: {
       type: String,
       trim: true
     },
-    classroomlink: {
+    teacherEmail: {
       type: String,
       trim: true
-    }
+    },
+    enrollmentCode: {
+      type: String,
+      trim: true
+    },
+    courseState: {
+      type: String,
+      enum: ['ACTIVE', 'ARCHIVED', 'PROVISIONED', 'DECLINED', 'SUSPENDED'],
+      default: 'ACTIVE'
+    },
+    alternateLink: {
+      type: String,
+      trim: true
+    },
+    students: [{
+      name: String,
+      email: String,
+      userId: String
+    }],
+    teachers: [{
+      name: String,
+      email: String,
+      userId: String
+    }]
   },
   { timestamps: true }
 );
 
-const Event = mongoose.model("Event", eventSchema);
-export default Event;
+const Course = mongoose.model("Course", courseSchema);
+export default Course;
 
 /* 
 ✅ What does { timestamps: true } do?

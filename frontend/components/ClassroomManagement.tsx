@@ -3,15 +3,15 @@ import {
   Check,
   Copy,
   MessageSquare,
-  Plus,
+  
   RefreshCw,
   Send,
   Sparkles,
-  Users,
+  
 } from "lucide-react";
 import React, { useState } from "react";
 import { createClassroom } from "../services/contentGenerationApi";
-import { updateEventClassroom } from "../services/apiService";
+import { updateEventClassroom, sendClassroomAnnouncement } from "../services/apiService";
 import { Card } from "./ui";
 
 interface ClassroomManagementProps {
@@ -21,6 +21,7 @@ interface ClassroomManagementProps {
     datetime: string;
     location: string;
     description: string;
+    className?:string;
     classroomcode?: string;
     classroomlink?: string;
   };
@@ -44,11 +45,11 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
 }) => {
   // Initialize with existing classroom data if available
   const [classrooms, setClassrooms] = useState<Classroom[]>(
-    eventData.classroomcode && eventData.classroomlink
+    eventData.classroomcode && eventData.classroomlink && eventData.className
       ? [
           {
             id: "existing-classroom",
-            name: `${eventData.name} Classroom`,
+            name: eventData.className,
             code: eventData.classroomcode,
             link: eventData.classroomlink,
             description: `Classroom for ${eventData.name}`,
@@ -106,7 +107,7 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
       setClassrooms((prev) => [newClassroomItem, ...prev]);
 
       // Save classroom data to the event if eventId is provided
-      if (eventId && newClassroomItem.code && newClassroomItem.link) {
+      if (eventId && newClassroomItem.code && newClassroomItem.link && newClassroom.name) {
         try {
           console.log('=== SAVING CLASSROOM DATA TO EVENT ===');
           console.log('Event ID:', eventId);
@@ -114,6 +115,7 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
           console.log('Classroom Link:', newClassroomItem.link);
 
           const updateResult = await updateEventClassroom(eventId, {
+            className: newClassroomItem.name,
             classroomcode: newClassroomItem.code,
             classroomlink: newClassroomItem.link,
           });
@@ -223,15 +225,19 @@ Event: ${eventData.name}`;
 
     setIsSendingAnnouncement(true);
     try {
-      // Simulate API call - replace with actual announcement sending API
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      
-      // Show success message
-      alert("Announcement sent successfully!");
-      
-      // Reset form after sending
-      setAnnouncementPrompt("");
-      setGeneratedAnnouncement("");
+      // Use API service to send announcement
+      const result = await sendClassroomAnnouncement({
+        className: selectedClassroom.name, // className from frontend maps to courseName in backend
+        announcementText: generatedAnnouncement,
+      });
+
+      if (result.success) {
+        alert("Announcement sent successfully!");
+        setAnnouncementPrompt("");
+        setGeneratedAnnouncement("");
+      } else {
+        alert("Failed to send announcement: " + (result.message || "Unknown error"));
+      }
     } catch (error) {
       console.error("Failed to send announcement:", error);
       alert("Failed to send announcement. Please try again.");
@@ -240,13 +246,7 @@ Event: ${eventData.name}`;
     }
   };
 
-  const handleCreateNew = () => {
-    setClassrooms([]);
-    setSelectedClassroom(null);
-    setNewClassroom({ name: "", description: "", email: "" });
-    setCreateError(null);
-  };
-
+  
   // Removed manual classroom update functionality due to backend connectivity issues
 
   return (
@@ -329,18 +329,7 @@ Event: ${eventData.name}`;
           <>
             {/* Existing Classrooms */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Users className="h-5 w-5 text-green-400" />
-                  Your Classrooms ({classrooms.length})
-                </h3>
-                <button
-                  onClick={handleCreateNew}
-                  className="text-sm text-gray-400 hover:text-gray-300 flex items-center gap-1 transition-colors duration-200"
-                >
-                  <Plus className="h-3 w-3" />
-                  Create New
-                </button>
+              <div className="flex items-center justify-between">     
               </div>
 
               {classrooms.map((classroom) => (

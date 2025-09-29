@@ -32,6 +32,7 @@ interface Event {
   createdAt: string;
   registrationFormUrl?: string;
   registrationFormEditUrl?: string;
+  className?: string;
   classroomcode?: string;
   classroomlink?: string;
 }
@@ -64,6 +65,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     createdAt: event.createdAt,
     registrationFormUrl: event.registrationFormUrl,
     registrationFormEditUrl: event.registrationFormEditUrl,
+    className: event.className,
     classroomcode: event.classroomcode,
     classroomlink: event.classroomlink,
   }));
