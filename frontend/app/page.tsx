@@ -47,8 +47,77 @@ export default function AIEventManager() {
   const [currentView, setCurrentView] = React.useState<
     "landing" | "eventManager" | "eventDetails"
   >("landing");
-  const [selectedEvent, setSelectedEvent] = React.useState<Event | null>(null);
-  const [eventCreated, setEventCreated] = React.useState(false);
+  const [selectedEvent, setSelectedEvent] = React.useState<Event | null>(() => {
+    // Try to restore selected event from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('eventure-selected-event');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.warn('Failed to parse saved event:', e);
+        }
+      }
+    }
+    return null;
+  });
+  const [eventCreated, setEventCreated] = React.useState(() => {
+    // Try to restore event created state from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('eventure-event-created');
+      return saved === 'true';
+    }
+    return false;
+  });
+
+  // Save selectedEvent to localStorage whenever it changes
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedEvent) {
+        localStorage.setItem('eventure-selected-event', JSON.stringify(selectedEvent));
+      } else {
+        localStorage.removeItem('eventure-selected-event');
+      }
+    }
+  }, [selectedEvent]);
+
+  // Save eventCreated state to localStorage whenever it changes
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('eventure-event-created', eventCreated.toString());
+    }
+  }, [eventCreated]);
+
+  // Restore view state when component mounts if there's a saved event
+  React.useEffect(() => {
+    if (selectedEvent && eventCreated && currentView !== "eventDetails") {
+      setCurrentView("eventDetails");
+      // Only set tab if no saved tab exists, or if current tab is not valid for the event
+      const hasRegistration = selectedEvent.registrationFormUrl || selectedEvent.registrationFormEditUrl;
+      const hasClassroom = selectedEvent.classroomcode && selectedEvent.classroomlink;
+      const savedTab = typeof window !== 'undefined' ? localStorage.getItem('eventure-active-tab') : null;
+      
+      // If there's a saved tab and it's valid for current event data, use it
+      if (savedTab && 
+          ((savedTab === 'registration' && hasRegistration) ||
+           (savedTab === 'classroom' && hasClassroom) ||
+           ['ai', 'banner', 'reminders'].includes(savedTab))) {
+        setActiveTab(savedTab as "ai" | "banner" | "registration" | "reminders" | "classroom");
+      } else {
+        // Otherwise, choose based on what exists
+        if (hasRegistration && hasClassroom) {
+          // If both exist, prefer registration (user likely just created forms)
+          setActiveTab("registration");
+        } else if (hasClassroom) {
+          setActiveTab("classroom");
+        } else if (hasRegistration) {
+          setActiveTab("registration");
+        } else {
+          setActiveTab("ai");
+        }
+      }
+    }
+  }, [selectedEvent, eventCreated, currentView]); // Run when these values change
 
     const handleEventCreated = (createdEvent?: BackendEvent) => {
     console.log('=== HANDLE EVENT CREATED CALLED ===', createdEvent);
@@ -80,10 +149,21 @@ export default function AIEventManager() {
     };
     
     setSelectedEvent(formattedEvent);
+    setEventCreated(true);
     setCurrentView("eventDetails");
     
-    // Only set registration tab if forms exist, otherwise show first tab (ai)
-    if (createdEvent.registrationFormUrl && createdEvent.registrationFormEditUrl) {
+    // Set appropriate tab based on what was created
+    const hasRegistration = createdEvent.registrationFormUrl && createdEvent.registrationFormEditUrl;
+    const hasClassroom = createdEvent.classroomcode && createdEvent.classroomlink;
+    
+    if (hasRegistration && hasClassroom) {
+      // If both exist, show registration first (since forms are usually created during event creation)
+      setActiveTab("registration");
+      console.log('=== SWITCHING TO EVENT DETAILS VIEW WITH REGISTRATION TAB (both exist) ===');
+    } else if (hasClassroom) {
+      setActiveTab("classroom");
+      console.log('=== SWITCHING TO EVENT DETAILS VIEW WITH CLASSROOM TAB ===');
+    } else if (hasRegistration) {
       setActiveTab("registration");
       console.log('=== SWITCHING TO EVENT DETAILS VIEW WITH REGISTRATION TAB ===');
     } else {
@@ -113,13 +193,35 @@ export default function AIEventManager() {
 
   const [activeTab, setActiveTab] = React.useState<
     "ai" | "banner" | "registration" | "reminders" | "classroom"
-  >("ai");
+  >(() => {
+    // Try to restore active tab from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('eventure-active-tab');
+      if (saved && ['ai', 'banner', 'registration', 'reminders', 'classroom'].includes(saved)) {
+        return saved as "ai" | "banner" | "registration" | "reminders" | "classroom";
+      }
+    }
+    return "ai";
+  });
+
+  // Save activeTab to localStorage whenever it changes
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('eventure-active-tab', activeTab);
+    }
+  }, [activeTab]);
 
   const handleCreateEvent = () => {
     setCurrentView("eventManager");
     setSelectedEvent(null);
     setEventCreated(false);
     resetForm();
+    // Clear localStorage when creating a new event
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('eventure-selected-event');
+      localStorage.setItem('eventure-event-created', 'false');
+      localStorage.removeItem('eventure-active-tab'); // Reset tab when creating new event
+    }
   };
 
   const handleSelectEvent = (event: LandingPageEvent) => {
@@ -139,6 +241,12 @@ export default function AIEventManager() {
     setCurrentView("landing");
     setSelectedEvent(null);
     setEventCreated(false);
+    // Clear localStorage when going back to landing
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('eventure-selected-event');
+      localStorage.setItem('eventure-event-created', 'false');
+      localStorage.removeItem('eventure-active-tab'); // Reset tab when going back
+    }
   };
 
   if (currentView === "landing") {
@@ -346,6 +454,19 @@ export default function AIEventManager() {
                     classroomlink: selectedEvent.classroomlink,
                   }}
                   eventId={selectedEvent._id}
+                  onClassroomUpdate={(classroomData: {
+                    className: string;
+                    classroomcode: string;
+                    classroomlink: string;
+                  }) => {
+                    // Update the selectedEvent with new classroom data
+                    setSelectedEvent(prev => prev ? {
+                      ...prev,
+                      className: classroomData.className,
+                      classroomcode: classroomData.classroomcode,
+                      classroomlink: classroomData.classroomlink,
+                    } : null);
+                  }}
                 />
               )}
             </div>
@@ -480,8 +601,13 @@ export default function AIEventManager() {
           </>
         )}
 
-        {/* AI Generated Content in Tabs - Show after event creation or form submission */}
-        {(showAIOutput || eventCreated) && (
+        {/* AI Generated Content in Tabs - Show after event creation, form submission, or classroom creation */}
+        {(showAIOutput || eventCreated || (selectedEvent && (
+          selectedEvent.registrationFormUrl || 
+          selectedEvent.registrationFormEditUrl || 
+          selectedEvent.classroomcode || 
+          selectedEvent.classroomlink
+        ))) && (
           <div className="bg-gradient-to-br from-gray-900/50 to-black/50 rounded-2xl border border-white/10 p-8">
             <div className="flex space-x-4 mb-8">
               {[

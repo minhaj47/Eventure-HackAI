@@ -136,12 +136,59 @@ export const useEvents = () => {
     []
   );
 
+  const deleteEvent = useCallback(
+    async (eventId: string) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        console.log('=== useEvents deleteEvent CALLED ===');
+        console.log('Event ID to delete:', eventId);
+        console.log('API_BASE_URL:', API_BASE_URL);
+
+        const response = await fetch(`${API_BASE_URL}/api/event/delete/${eventId}`, {
+          method: "DELETE",
+          credentials: "include", // Important for authentication cookies
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Please sign in to delete events");
+          }
+          if (response.status === 404) {
+            throw new Error("Event not found");
+          }
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to delete event");
+        }
+
+        const data = await response.json();
+        console.log('=== DELETE EVENT RESPONSE ===');
+        console.log('Response data:', data);
+
+        // Remove the deleted event from the local state
+        setEvents((prev) => prev.filter(event => event._id !== eventId));
+
+        return data;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to delete event";
+        setError(errorMessage);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
   return {
     events,
     isLoading,
     error,
     fetchEvents,
     createEvent,
+    deleteEvent,
     setError, // Allow manual error clearing
   };
 };

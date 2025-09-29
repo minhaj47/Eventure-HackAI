@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { BackendEvent, useEvents } from "../hooks/useEvents";
 import { Background } from "./Background";
@@ -48,9 +48,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const { data: session, status } = useSession();
   const { syncGoogleAuthWithBackend } = useAuth();
-  const { events: backendEvents, isLoading, error, fetchEvents } = useEvents();
+  const { events: backendEvents, isLoading, error, fetchEvents, deleteEvent } = useEvents();
   const [refreshing, setRefreshing] = useState(false);
   const [authSynced, setAuthSynced] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
   // Convert backend events to the format expected by the landing page
   const userEvents: Event[] = backendEvents.map((event: BackendEvent) => ({
@@ -70,6 +71,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     classroomlink: event.classroomlink,
   }));
 
+  const loadEvents = useCallback(async () => {
+    if (!session?.user) {
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      // Ensure backend auth is synced before fetching events
+      if (!authSynced) {
+        await syncGoogleAuthWithBackend();
+        setAuthSynced(true);
+      }
+      await fetchEvents();
+    } catch (error) {
+      console.error("Failed to load events:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [session?.user, authSynced, syncGoogleAuthWithBackend, fetchEvents]);
+
   // Sync authentication and fetch events when user is authenticated
   useEffect(() => {
     const syncAndLoadEvents = async () => {
@@ -87,25 +108,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     };
 
     syncAndLoadEvents();
-  }, [session, authSynced]);
+  }, [session, authSynced, loadEvents, syncGoogleAuthWithBackend]);
 
-  const loadEvents = async () => {
-    if (!session?.user) {
+  const handleDeleteEventClick = async (eventId: string, eventName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event card click
+    
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${eventName}"? This action cannot be undone.`
+    );
+    
+    if (!confirmDelete) {
       return;
     }
 
-    setRefreshing(true);
+    setDeletingEventId(eventId);
     try {
-      // Ensure backend auth is synced before fetching events
-      if (!authSynced) {
-        await syncGoogleAuthWithBackend();
-        setAuthSynced(true);
-      }
-      await fetchEvents();
+      console.log('=== STARTING EVENT DELETION FROM UI ===');
+      console.log('Event ID to delete:', eventId);
+      console.log('Event Name:', eventName);
+      
+      await deleteEvent(eventId);
+      
+      console.log('=== EVENT DELETION SUCCESSFUL FROM UI ===');
+      console.log('Event should be removed from UI automatically');
+      // Events list will be automatically updated via the useEvents hook state change
     } catch (error) {
-      console.error("Failed to load events:", error);
+      console.error("Failed to delete event:", error);
+      alert("Failed to delete event. Please try again.");
     } finally {
-      setRefreshing(false);
+      setDeletingEventId(null);
     }
   };
 
@@ -439,8 +470,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-white/60 hover:text-red-400 transition-colors">
-                        <Trash className="h-4 w-4" />
+                      <button 
+                        onClick={(e) => handleDeleteEventClick(event.id, event.name, e)}
+                        disabled={deletingEventId === event.id}
+                        className="p-2 text-white/60 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={`Delete ${event.name}`}
+                      >
+                        {deletingEventId === event.id ? (
+                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                        ) : (
+                          <Trash className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </div>

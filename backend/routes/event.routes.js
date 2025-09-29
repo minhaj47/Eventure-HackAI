@@ -2,6 +2,7 @@ import express from "express"
 import {
     addEvent,
     checkGoogleFormConfig,
+    deleteEvent,
     fetchEventParticipants,
     generateEventRegistrationForm,
     generateGoogleForm,
@@ -28,6 +29,7 @@ eventRouter.put("/update/:eventId",isAuth,updateEvent) // Restore auth
 eventRouter.put("/update-classroom/:eventId",updateEventClassroom) // New classroom update route (temp no auth)
 console.log('Registered update-classroom route');
 eventRouter.post("/add",isAuth,addEvent)
+eventRouter.delete("/delete/:eventId",isAuth,deleteEvent) // Delete event route
 eventRouter.get("/participants/:eventId",isAuth,fetchEventParticipants)
 
 // Event update routes (no authentication required)

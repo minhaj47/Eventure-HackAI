@@ -761,3 +761,75 @@ export const updateEventClassroom = async (req, res) => {
     });
   }
 };
+
+// Controller to delete an event
+export const deleteEvent = async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+    const userId = req.userId; // from isAuth middleware
+
+    console.log("=== DELETE EVENT CALLED ===");
+    console.log("Event ID:", eventId);
+    console.log("User ID:", userId);
+
+    // Validate eventId format
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(eventId);
+    if (!isValidObjectId) {
+      console.log("Invalid ObjectId format provided:", eventId);
+      return res.status(400).json({ 
+        success: false,
+        message: "Invalid event ID format" 
+      });
+    }
+
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+    
+    if (!event) {
+      console.log("Event not found for ID:", eventId);
+      return res.status(404).json({ 
+        success: false,
+        message: "Event not found" 
+      });
+    }
+
+    console.log("Found event to delete:", {
+      id: event._id,
+      name: event.eventName,
+      eventType: event.eventType
+    });
+
+    // Delete the event from the database
+    await Event.findByIdAndDelete(eventId);
+
+    // Remove the event reference from the user's events array
+    await User.findByIdAndUpdate(
+      userId,
+      { $pull: { events: eventId } },
+      { new: true }
+    );
+
+    console.log("=== EVENT DELETION SUCCESSFUL ===");
+    console.log("Deleted event ID:", eventId);
+    console.log("Removed from user's events array");
+
+    res.status(200).json({
+      success: true,
+      message: "Event deleted successfully",
+      deletedEvent: {
+        _id: event._id,
+        eventName: event.eventName,
+        eventType: event.eventType,
+        dateTime: event.dateTime
+      }
+    });
+
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error. Could not delete event.",
+      error: error.message 
+    });
+  }
+};

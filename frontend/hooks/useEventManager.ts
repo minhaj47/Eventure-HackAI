@@ -3,7 +3,7 @@ import { Banner, BannerConfig, EventData, RegistrationField } from "../types";
 import { useEvents, BackendEvent } from "./useEvents";
 
 export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void) => {
-  const { createEvent } = useEvents();
+  const { createEvent, deleteEvent } = useEvents();
 
   const [eventData, setEventData] = useState<EventData>({
     eventName: "",
@@ -248,6 +248,25 @@ export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void)
     );
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      console.log('=== STARTING EVENT DELETION ===');
+      console.log('Event ID to delete:', eventId);
+
+      await deleteEvent(eventId);
+
+      console.log('=== EVENT DELETION SUCCESSFUL ===');
+      console.log('Event deleted successfully:', eventId);
+
+    } catch (error) {
+      console.error("=== EVENT DELETION FAILED ===");
+      console.error("Error details:", error);
+      
+      // Re-throw the error so the calling component can handle it
+      throw error;
+    }
+  };
+
   return {
     eventData,
     showAIOutput,
@@ -258,6 +277,7 @@ export const useEventManager = (onEventCreated?: (event?: BackendEvent) => void)
     newFieldName,
     handleEventSubmit,
     handleInputChange,
+    handleDeleteEvent,
     resetForm,
     generateBanners,
     refreshBanner,

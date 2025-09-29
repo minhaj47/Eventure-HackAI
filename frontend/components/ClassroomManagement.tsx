@@ -26,6 +26,11 @@ interface ClassroomManagementProps {
     classroomlink?: string;
   };
   eventId?: string;
+  onClassroomUpdate?: (classroomData: {
+    className: string;
+    classroomcode: string;
+    classroomlink: string;
+  }) => void;
 }
 
 interface Classroom {
@@ -42,6 +47,7 @@ interface Classroom {
 export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
   eventData,
   eventId,
+  onClassroomUpdate,
 }) => {
   // Initialize with existing classroom data if available
   const [classrooms, setClassrooms] = useState<Classroom[]>(
@@ -125,6 +131,13 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
 
           if (updateResult.success) {
             alert("Classroom created and saved to event successfully!");
+            
+            // Call the callback to update parent component state
+            onClassroomUpdate?.({
+              className: newClassroomItem.name,
+              classroomcode: newClassroomItem.code,
+              classroomlink: newClassroomItem.link,
+            });
           } else {
             alert("Classroom created, but failed to save to event. You can update it manually.");
           }
