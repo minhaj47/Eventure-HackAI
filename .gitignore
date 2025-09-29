@@ -1,0 +1,13 @@
+# Test directories and files
+test/
+**/test/
+test*.js
+**/test*.js
+*.test.js
+**/*.test.js
+*.spec.js
+**/*.spec.js
+__tests__/
+**/__tests__/
+coverage/
+**/coverage/
