@@ -418,3 +418,45 @@ export const sendClassroomAnnouncement = async (data: ClassroomAnnouncementReque
     throw error;
   }
 };
+
+// AI-powered announcement generation
+export interface AnnouncementGenerationRequest {
+  announcementMessage: string;
+  eventName: string;
+  eventType: string;
+  suggestions?: string;
+}
+
+export const generateEventAnnouncement = async (data: AnnouncementGenerationRequest): Promise<string> => {
+  try {
+    console.log('=== generateEventAnnouncement API CALL ===');
+    console.log('Announcement generation data:', data);
+
+    const response = await fetch(`${API_BASE_URL}/api/event/generate-announcement`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    console.log('=== ANNOUNCEMENT GENERATION API RESPONSE ===');
+    console.log('Status:', response.status);
+    console.log('OK:', response.ok);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('API Error:', errorData);
+      throw new Error(errorData.error || errorData.message || `Failed to generate announcement: ${response.statusText}`);
+    }
+
+    // The response is text, not JSON
+    const result = await response.text();
+    console.log('=== ANNOUNCEMENT GENERATION SUCCESS RESULT ===');
+    console.log('Generated announcement:', result);
+    return result;
+  } catch (error) {
+    console.error('Error generating event announcement:', error);
+    throw error;
+  }
+};

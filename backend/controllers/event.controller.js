@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import eventUpdateService from "../services/eventUpdateService.js";
 import googleFormService from "../services/googleFormService.js";
 import { extractAllContacts } from "../services/contactExtractionService.js";
+import axios from "axios";
 
 // Controller to add a new event
 export const addEvent = async (req, res) => {
@@ -830,6 +831,80 @@ export const deleteEvent = async (req, res) => {
       success: false,
       message: "Server error. Could not delete event.",
       error: error.message 
+    });
+  }
+};
+
+// Generate AI-powered event announcement
+export const generateEventAnnouncement = async (req, res) => {
+  try {
+    const {
+      announcementMessage,
+      eventName,
+      eventType,
+      suggestions
+    } = req.body;
+
+    // Validate required fields
+    if (!announcementMessage || !eventName || !eventType) {
+      return res.status(400).json({
+        error: "Missing required fields: announcementMessage, eventName, and eventType are required"
+      });
+    }
+
+    // Use SmythOS agent for announcement generation
+    const smythosUrl = "https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai";
+    
+    console.log("SmythOS URL:", smythosUrl);
+    console.log("Full endpoint:", `${smythosUrl}/api/generate_event_announcement`);
+    
+    // Prepare payload for SmythOS agent
+    const payload = {
+      announcementMessage,
+      eventName,
+      eventType,
+      suggestions
+    };
+
+    console.log("Sending announcement payload:", JSON.stringify(payload, null, 2));
+
+    const result = await axios.post(`${smythosUrl}/api/generate_event_announcement`, payload, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000 // 30 seconds timeout
+    });
+
+    // Extract the clean announcement text from the nested response
+    console.log("SmythOS Announcement Response:", result.data);
+    
+    let announcementText = "";
+    
+    // Extract the announcement message from the nested structure
+    if (result.data && result.data.result && result.data.result.Output && result.data.result.Output.announcementMessage) {
+      announcementText = result.data.result.Output.announcementMessage;
+    } else if (typeof result.data === 'string') {
+      // In case the response is already a string
+      announcementText = result.data;
+    } else if (result.data && result.data.announcementMessage) {
+      // Alternative structure
+      announcementText = result.data.announcementMessage;
+    } else {
+      // Fallback - return the whole response if structure is unexpected
+      console.warn("Unexpected SmythOS response structure:", result.data);
+      announcementText = JSON.stringify(result.data);
+    }
+    
+    console.log("Extracted announcement text:", announcementText);
+    return res.status(200).send(announcementText);
+
+  } catch (error) {
+    console.error("Event announcement generation error:", error.message);
+    console.error("Error details:", error.response?.data || error);
+    return res.status(500).json({
+      error: "Failed to generate event announcement. Please try again.",
+      details: error.message,
+      smythosResponse: error.response?.data
     });
   }
 };

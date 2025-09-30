@@ -4,6 +4,7 @@ import {
     checkGoogleFormConfig,
     deleteEvent,
     fetchEventParticipants,
+    generateEventAnnouncement,
     generateEventRegistrationForm,
     generateGoogleForm,
     getUserEvents,
@@ -52,5 +53,8 @@ eventRouter.post("/generate-google-form", generateGoogleForm)
 eventRouter.post("/:eventId/generate-registration-form", generateEventRegistrationForm)
 eventRouter.get("/google-form-config", checkGoogleFormConfig)
 eventRouter.get("/test-form-creation", testFormCreation)
+
+// AI-powered announcement generation route (NO authentication required)
+eventRouter.post("/generate-announcement", generateEventAnnouncement)
 
 export default eventRouter

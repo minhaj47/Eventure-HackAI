@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { createClassroom } from "../services/contentGenerationApi";
-import { updateEventClassroom, sendClassroomAnnouncement } from "../services/apiService";
+import { updateEventClassroom, sendClassroomAnnouncement, generateEventAnnouncement } from "../services/apiService";
 import { Card } from "./ui";
 
 interface ClassroomManagementProps {
@@ -167,6 +167,8 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
   const [isGeneratingAnnouncement, setIsGeneratingAnnouncement] =
     useState(false);
   const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false);
+  const [regenerationSuggestions, setRegenerationSuggestions] = useState("");
+  const [showRegenerateOptions, setShowRegenerateOptions] = useState(false);
 
   const copyClassroomCode = async (code: string) => {
     try {
@@ -183,51 +185,57 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
 
     setIsGeneratingAnnouncement(true);
     try {
-      // Simulate API call - replace with actual announcement generation API
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      // Use AI-powered announcement generation
+      const announcementMessage = announcementPrompt || `Welcome to our ${eventData.eventType} classroom! We're excited to have you join us for this event.`;
+      
+      // Create detailed suggestions like email generator does
+      const suggestions = `${announcementPrompt || "Classroom announcement"}. Include event details: Date: ${new Date(eventData.datetime).toLocaleDateString()}, Time: ${new Date(eventData.datetime).toLocaleTimeString()}, Location: ${eventData.location}, Classroom Code: ${selectedClassroom.code}. Make it engaging, professional, and include call-to-action for students to join the classroom.`;
 
-      const announcementTemplate = `📢 Important Announcement for ${
-        selectedClassroom.name
-      }
+      const generatedContent = await generateEventAnnouncement({
+        announcementMessage: announcementMessage,
+        eventName: eventData.name,
+        eventType: eventData.eventType,
+        suggestions: suggestions
+      });
 
-${announcementPrompt || `Welcome to our ${eventData.eventType} classroom!`}
-
-Event Details:
-📅 Date: ${new Date(eventData.datetime).toLocaleDateString()}
-🕒 Time: ${new Date(eventData.datetime).toLocaleTimeString()}
-📍 Location: ${eventData.location}
-
-${
-  announcementPrompt
-    ? `\n${announcementPrompt}\n`
-    : `We're excited to have you join us for ${eventData.name}. This virtual classroom will be your hub for:
-
-• Live discussions and Q&A sessions
-• Resource sharing and materials
-• Interactive activities and polls
-• Networking with fellow participants
-• Access to session recordings
-
-Please make sure to:
-✅ Join the classroom using code: ${selectedClassroom.code}
-✅ Check your tech setup before the event
-✅ Have your questions ready for interactive sessions
-✅ Introduce yourself in the discussion forum`
-}
-
-For technical support or questions about the classroom, please contact our support team.
-
-Best regards,
-The Event Team
-
----
-Classroom Code: ${selectedClassroom.code}
-Event: ${eventData.name}`;
-
-      setGeneratedAnnouncement(announcementTemplate);
+      setGeneratedAnnouncement(generatedContent);
     } catch (error) {
       console.error("Failed to generate announcement:", error);
-      // Handle error appropriately
+      setGeneratedAnnouncement("Sorry, we couldn't generate the announcement at this time. Please try again later.");
+    } finally {
+      setIsGeneratingAnnouncement(false);
+    }
+  };
+
+  const regenerateAnnouncement = async () => {
+    if (!regenerationSuggestions.trim() || !selectedClassroom) {
+      alert("Please provide suggestions for regeneration");
+      return;
+    }
+
+    setIsGeneratingAnnouncement(true);
+    try {
+      // Create enhanced announcement message with user feedback
+      const enhancedMessage = `${announcementPrompt || `Welcome to our ${eventData.eventType} classroom!`}
+
+Previous announcement was generated. User feedback for improvement: ${regenerationSuggestions}`;
+
+      // Create detailed suggestions including user feedback
+      const suggestions = `Original request: ${announcementPrompt || "Classroom announcement"}. User feedback for improvement: ${regenerationSuggestions}. Include event details: Date: ${new Date(eventData.datetime).toLocaleDateString()}, Time: ${new Date(eventData.datetime).toLocaleTimeString()}, Location: ${eventData.location}, Classroom Code: ${selectedClassroom.code}. Make it engaging and professional.`;
+
+      const regeneratedContent = await generateEventAnnouncement({
+        announcementMessage: enhancedMessage,
+        eventName: eventData.name,
+        eventType: eventData.eventType,
+        suggestions: suggestions
+      });
+
+      setGeneratedAnnouncement(regeneratedContent);
+      setShowRegenerateOptions(false);
+      setRegenerationSuggestions("");
+    } catch (error) {
+      console.error("Failed to regenerate announcement:", error);
+      alert("Failed to regenerate announcement. Please try again.");
     } finally {
       setIsGeneratingAnnouncement(false);
     }
@@ -546,6 +554,47 @@ Event: ${eventData.name}`;
                     <div className="bg-gray-900/50 border border-gray-600/30 rounded-xl p-4 text-gray-300 text-sm leading-relaxed whitespace-pre-line max-h-64 overflow-y-auto">
                       {generatedAnnouncement}
                     </div>
+
+                    {/* Regenerate Options */}
+                    <div className="mt-4 flex items-center gap-2">
+                      <button
+                        onClick={() => setShowRegenerateOptions(!showRegenerateOptions)}
+                        className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg transition-all duration-200 flex items-center gap-2"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Regenerate with Suggestions
+                      </button>
+                    </div>
+
+                    {/* Regeneration Suggestions Input */}
+                    {showRegenerateOptions && (
+                      <div className="mt-4 space-y-3">
+                        <label className="block text-sm font-medium text-gray-300">
+                          Improvement Suggestions
+                        </label>
+                        <div className="flex gap-2">
+                          <textarea
+                            rows={2}
+                            value={regenerationSuggestions}
+                            onChange={(e) => setRegenerationSuggestions(e.target.value)}
+                            placeholder="e.g., Make it more casual, add more details about networking opportunities..."
+                            className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 resize-none"
+                          />
+                          <button
+                            onClick={regenerateAnnouncement}
+                            disabled={isGeneratingAnnouncement || !regenerationSuggestions.trim()}
+                            className="px-6 py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
+                          >
+                            {isGeneratingAnnouncement ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4" />
+                            )}
+                            {isGeneratingAnnouncement ? "Regenerating..." : "Regenerate"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
