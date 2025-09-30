@@ -19,14 +19,14 @@ export const Header: React.FC<HeaderProps> = ({ onCreateEvent }) => {
               <img
                 src={session.user?.image || ""}
                 alt={session.user?.name || ""}
-                className="h-8 w-8 rounded-full border border-white/20"
+                className="h-10 w-10 rounded-full border border-white/20"
               />
               <button
                 onClick={() => signOut()}
                 className="p-2 text-gray-400 hover:text-white transition-colors"
                 title="Sign out"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-10 w-10" />
               </button>
             </div>
           </div>
