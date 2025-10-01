@@ -19,7 +19,7 @@ import {
   Contact 
 } from "../services/apiService";
 import { sendEventUpdate } from "../services/contentGenerationApi";
-import { Card } from "./ui";
+import { Card, Toast, useToast } from "./ui";
 
 interface AutomatedRemindersProps {
   eventData: {
@@ -34,6 +34,9 @@ interface AutomatedRemindersProps {
 export const AutomatedReminders: React.FC<AutomatedRemindersProps> = ({
   eventData,
 }) => {
+  // Toast notifications
+  const { toasts, showToast, removeToast } = useToast();
+
   // Email reminder states
   const [emailPrompt, setEmailPrompt] = useState("");
   const [generatedEmail, setGeneratedEmail] = useState("");
@@ -58,43 +61,13 @@ export const AutomatedReminders: React.FC<AutomatedRemindersProps> = ({
   const [isExtractingParticipants, setIsExtractingParticipants] = useState(false);
   
   // Participants data
-  const [participants, setParticipants] = useState([
-    {
-      id: 1,
-      name: "Alex Johnson",
-      email: "alex@example.com",
-      status: "confirmed" as const,
-      registeredAt: "2024-01-15",
-    },
-    {
-      id: 2,
-      name: "Sarah Chen",
-      email: "sarah@example.com",
-      status: "pending" as const,
-      registeredAt: "2024-01-16",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      email: "michael@example.com",
-      status: "confirmed" as const,
-      registeredAt: "2024-01-17",
-    },
-    {
-      id: 4,
-      name: "Emma Davis",
-      email: "emma@example.com",
-      status: "confirmed" as const,
-      registeredAt: "2024-01-18",
-    },
-    {
-      id: 5,
-      name: "James Wilson",
-      email: "james@example.com",
-      status: "pending" as const,
-      registeredAt: "2024-01-19",
-    },
-  ]);
+  const [participants, setParticipants] = useState<Array<{
+    id: number;
+    name: string;
+    email: string;
+    status: "confirmed" | "pending";
+    registeredAt: string;
+  }>>([]);
 
   // Remove duplicate sendingStatus declaration
   // const [sendingStatus, setSendingStatus] = useState<{
@@ -186,13 +159,13 @@ Questions? Contact us at: events@company.com`;
 
   const sendEmailToParticipant = async (participantId: number) => {
     if (!generatedEmail.trim()) {
-      alert("Please generate an email first before sending to participants");
+      showToast("warning", "Email Not Generated", "Please generate an email template first before sending to participants.");
       return;
     }
 
     const participant = participants.find(p => p.id === participantId);
     if (!participant) {
-      alert("Participant not found");
+      showToast("error", "Participant Not Found", "Unable to find the selected participant.");
       return;
     }
 
@@ -213,14 +186,14 @@ Questions? Contact us at: events@company.com`;
       });
 
       if (result.success) {
-        alert(`Successfully sent email to ${participant.name}!`);
+        showToast("success", "Email Sent", `Successfully sent email to ${participant.name}!`);
       } else {
         throw new Error(result.message || 'Failed to send email');
       }
 
     } catch (error) {
       console.error('Failed to send email to participant:', error);
-      alert(`Failed to send email to ${participant.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showToast("error", "Send Failed", `Failed to send email to ${participant.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSendingStatus((prev) => ({ ...prev, [participantId]: false }));
     }
@@ -228,7 +201,7 @@ Questions? Contact us at: events@company.com`;
 
   const sendViaGoogleSheets = async () => {
     if (!sheetId || !generatedEmail) {
-      alert("Please provide a Google Sheet ID and generate an email first.");
+      showToast("warning", "Missing Information", "Please provide a Google Sheet ID and generate an email first.");
       return;
     }
 
@@ -242,13 +215,11 @@ Questions? Contact us at: events@company.com`;
         sheetRange: sheetRange,
       });
 
-      alert("Event update sent successfully via Google Sheets!");
+      showToast("success", "Update Sent", "Event update sent successfully via Google Sheets!");
       console.log("Send result:", result);
     } catch (error) {
       console.error("Failed to send via Google Sheets:", error);
-      alert(
-        "Failed to send event update. Please check your Sheet ID and try again."
-      );
+      showToast("error", "Send Failed", "Failed to send event update. Please check your Sheet ID and try again.");
     } finally {
       setIsSendingAll(false);
     }
@@ -256,12 +227,12 @@ Questions? Contact us at: events@company.com`;
 
   const sendEmailToAll = async () => {
     if (!generatedEmail.trim()) {
-      alert("Please generate an email first before sending to participants");
+      showToast("warning", "Email Not Generated", "Please generate an email template first before sending to participants.");
       return;
     }
 
     if (!googleSheetLink.trim()) {
-      alert("Please provide a Google Sheet link to send emails to participants");
+      showToast("warning", "Google Sheet Link Required", "Please provide a Google Sheet link to send emails to participants.");
       return;
     }
 
@@ -281,14 +252,14 @@ Questions? Contact us at: events@company.com`;
       });
 
       if (result.success) {
-        alert(`Successfully sent emails to all participants! ${result.message || ''}`);
+        showToast("success", "Emails Sent", `Successfully sent emails to all participants! ${result.message || ''}`);
       } else {
         throw new Error(result.message || 'Failed to send emails');
       }
 
     } catch (error) {
       console.error('Failed to send emails to participants:', error);
-      alert(`Failed to send emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showToast("error", "Send Failed", `Failed to send emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSendingAll(false);
     }
@@ -296,7 +267,7 @@ Questions? Contact us at: events@company.com`;
 
   const regenerateEmail = async () => {
     if (!regenerationSuggestions.trim()) {
-      alert("Please provide suggestions for regeneration");
+      showToast("warning", "Suggestions Required", "Please provide suggestions for regeneration.");
       return;
     }
 
@@ -333,7 +304,7 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
       setRegenerationSuggestions("");
     } catch (error) {
       console.error("Failed to regenerate email:", error);
-      alert("Failed to regenerate email. Please try again.");
+      showToast("error", "Regeneration Failed", "Failed to regenerate email. Please try again.");
     } finally {
       setIsGeneratingEmail(false);
     }
@@ -341,7 +312,7 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
 
   const extractParticipantsFromSheet = async () => {
     if (!googleSheetLink.trim()) {
-      alert("Please provide a Google Sheet link");
+      showToast("warning", "Google Sheet Link Required", "Please provide a Google Sheet link.");
       return;
     }
 
@@ -361,17 +332,42 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
       }));
 
       setParticipants(newParticipants);
-      alert(`Successfully extracted ${newParticipants.length} participants from the Google Sheet!`);
+      showToast("success", "Extraction Complete", `Successfully extracted ${newParticipants.length} participants from the Google Sheet!`);
     } catch (error) {
       console.error("Failed to extract participants:", error);
-      alert(`Failed to extract participants: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      showToast("error", "Extraction Failed", `Failed to extract participants: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsExtractingParticipants(false);
     }
   };
 
   return (
-    <Card title="Automated Reminders" icon={<Bell className="h-6 w-6" />}>
+    <>
+      {/* Toast Notifications Container - Upper Middle */}
+      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="flex flex-col items-center pt-4 sm:pt-6 md:pt-8 px-4 space-y-3">
+          {toasts.map((toast, index) => (
+            <div 
+              key={toast.id}
+              style={{ 
+                transform: `translateY(${index * 10}px)`,
+                zIndex: 60 + index 
+              }}
+              className="pointer-events-auto"
+            >
+              <Toast
+                id={toast.id}
+                type={toast.type}
+                title={toast.title}
+                message={toast.message}
+                onClose={removeToast}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <Card title="Automated Reminders" icon={<Bell className="h-6 w-6" />}>
       {/* Enhanced Email Reminder Section */}
       <div className="space-y-6">
         {/* Email Generation */}
@@ -693,16 +689,7 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
 
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <div
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        participant.status === "confirmed"
-                          ? "bg-green-900/30 text-green-300 border border-green-500/30"
-                          : "bg-yellow-900/30 text-yellow-300 border border-yellow-500/30"
-                      }`}
-                    >
-                      {participant.status}
-                    </div>
-                    <p className="text-gray-500 text-xs mt-1">
+                    <p className="text-gray-500 text-xs">
                       Registered:{" "}
                       {new Date(participant.registeredAt).toLocaleDateString()}
                     </p>
@@ -741,38 +728,26 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-xl border border-blue-500/20">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-400">
-                {participants.filter((p) => p.status === "confirmed").length}
+                {participants.length}
               </div>
-              <div className="text-sm text-gray-400">Confirmed</div>
+              <div className="text-sm text-gray-400">Total Participants</div>
             </div>
           </div>
-          <div className="p-4 bg-gradient-to-r from-yellow-900/20 to-orange-900/20 rounded-xl border border-yellow-500/20">
+          <div className="p-4 bg-gradient-to-r from-green-900/20 to-teal-900/20 rounded-xl border border-green-500/20">
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-400">
-                {participants.filter((p) => p.status === "pending").length}
+              <div className="text-2xl font-bold text-green-400">
+                {generatedEmail ? "✓" : "○"}
               </div>
-              <div className="text-sm text-gray-400">Pending</div>
-            </div>
-          </div>
-          <div className="p-4 bg-gradient-to-r from-purple-900/20 to-pink-900/20 rounded-xl border border-purple-500/20">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-400">
-                {(
-                  (participants.filter((p) => p.status === "confirmed").length /
-                    participants.length) *
-                  100
-                ).toFixed(0)}
-                %
-              </div>
-              <div className="text-sm text-gray-400">Response Rate</div>
+              <div className="text-sm text-gray-400">Email Template</div>
             </div>
           </div>
         </div>
       </div>
     </Card>
+    </>
   );
 };

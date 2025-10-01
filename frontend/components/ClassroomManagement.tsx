@@ -44,6 +44,22 @@ interface Classroom {
   status: "active" | "archived";
 }
 
+interface ClassroomApiResponse {
+  id?: string;
+  classroomId?: string;
+  classroomLink?: string;
+  result?: {
+    Output?: {
+      classroomDetails?: {
+        className?: string;
+        classCode?: string;
+        classLink?: string;
+        instructions?: string;
+      };
+    };
+  };
+}
+
 export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
   eventData,
   eventId,
@@ -98,12 +114,14 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
       });
 
       // Add the created classroom to the list
-      const classroomDetails = response.result?.Output?.classroomDetails;
+      // Handle response structure based on actual API response
+      const responseData = response as ClassroomApiResponse;
+      const classroomDetails = responseData?.result?.Output?.classroomDetails;
       const newClassroomItem: Classroom = {
-        id: response.id || Date.now().toString(),
+        id: (responseData?.id as string) || Date.now().toString(),
         name: classroomDetails?.className || newClassroom.name,
-        code: classroomDetails?.classCode || '',
-        link: classroomDetails?.classLink || '',
+        code: classroomDetails?.classCode || responseData?.classroomId || '',
+        link: classroomDetails?.classLink || responseData?.classroomLink || '',
         description: classroomDetails?.instructions || newClassroom.description,
         createdAt: new Date().toISOString(),
         participantCount: 0,
@@ -297,38 +315,11 @@ Previous announcement was generated. User feedback for improvement: ${regenerati
                       name: e.target.value,
                     }))
                   }
-                  placeholder={`${eventData.name} Classroom`}
+                  placeholder={"Classroom Name"}
                   className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
-              <div>
-                <input
-                  type="email"
-                  value={newClassroom.email}
-                  onChange={(e) =>
-                    setNewClassroom((prev) => ({
-                      ...prev,
-                      email: e.target.value,
-                    }))
-                  }
-                  placeholder="Your email (optional)"
-                  className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-              <div>
-                <textarea
-                  value={newClassroom.description}
-                  onChange={(e) =>
-                    setNewClassroom((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Optional description for your classroom..."
-                  rows={3}
-                  className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 resize-none"
-                />
-              </div>
+              
               {createError && (
                 <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
                   {createError}

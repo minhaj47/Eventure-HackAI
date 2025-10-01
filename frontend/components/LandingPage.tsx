@@ -225,9 +225,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             {/* Hero Section */}
             <div className="mt-12">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-400 bg-clip-text text-transparent mb-6">
-                AI Event Manager
-              </h1>
+                              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-400 bg-clip-text text-transparent mb-6">
+                  EVENTURE
+                </h1>
               <p className="text-xl sm:text-2xl text-white/90 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Create, manage, and promote your events with the power of
                 artificial intelligence. Generate content, design banners, and

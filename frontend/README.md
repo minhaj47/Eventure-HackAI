@@ -1,6 +1,6 @@
 # Event Manager Frontend
 
-This is a [Next.js](https://nextjs.org) application for the AI-powered Event Management system, integrated with SmythOS APIs for intelligent content generation.
+This is a [Next.js](https://nextjs.org) application for EVENTURE, an AI-powered Event Management system integrated with SmythOS APIs for intelligent content generation.
 
 ## Features
 

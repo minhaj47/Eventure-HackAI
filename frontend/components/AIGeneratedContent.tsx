@@ -18,34 +18,27 @@ interface AIGeneratedContentProps {
   eventData: LegacyEventData;
 }
 
+type PlatformType = "facebook" | "linkedin" | "twitter";
+type ContentLengthType = "short" | "medium" | "long";
+type AudienceType = "general" | "professionals" | "students" | "entrepreneurs";
+type CallToActionType = "register" | "learn_more" | "join_us" | "save_date";
+
 export const AIGeneratedContent: React.FC<AIGeneratedContentProps> = ({
   eventData,
 }) => {
-  const [selectedPlatform, setSelectedPlatform] = useState<
-    "facebook" | "linkedin" | "twitter"
-  >("facebook");
-  const [contentLength, setContentLength] = useState<
-    "short" | "medium" | "long"
-  >("medium");
+  const [selectedPlatform, setSelectedPlatform] = useState<PlatformType>("facebook");
+  const [contentLength, setContentLength] = useState<ContentLengthType>("medium");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // Changed to false since we're not auto-loading
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [apiContent, setApiContent] = useState<EventPostsResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Advanced parameters
-  const [tone, setTone] = useState<
-    "casual" | "professional" | "enthusiastic" | "formal"
-  >("enthusiastic");
-  const [includeHashtags, setIncludeHashtags] = useState(true);
-  const [includeEmojis, setIncludeEmojis] = useState(true);
-  const [targetAudience, setTargetAudience] = useState<
-    "general" | "professionals" | "students" | "entrepreneurs"
-  >("general");
-  const [callToAction, setCallToAction] = useState<
-    "register" | "learn_more" | "join_us" | "save_date"
-  >("register");
+  // Advanced parameters - keeping them for future use
+  const includeHashtags = true;
+  const includeEmojis = true;
+  const targetAudience: AudienceType = "general";
+  const callToAction: CallToActionType = "register";
 
   const loadContent = async () => {
     setIsLoading(true);
@@ -467,7 +460,7 @@ ${
                   {Object.entries(platformContent).map(([key, platform]) => (
                     <button
                       key={key}
-                      onClick={() => setSelectedPlatform(key as any)}
+                      onClick={() => setSelectedPlatform(key as PlatformType)}
                       className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition-all duration-300 ${
                         selectedPlatform === key
                           ? `bg-gradient-to-r ${platform.color} ${platform.borderColor} ${platform.textColor} shadow-lg scale-105`
@@ -492,7 +485,7 @@ ${
                     {["short", "medium", "long"].map((length) => (
                       <button
                         key={length}
-                        onClick={() => setContentLength(length as any)}
+                        onClick={() => setContentLength(length as ContentLengthType)}
                         className={`px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                           contentLength === length
                             ? "bg-purple-600/30 text-purple-200 border border-purple-500/30"

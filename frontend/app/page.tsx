@@ -40,7 +40,7 @@ interface Event extends LandingPageEvent {
   eventType: PurposeType;
 }
 
-export default function AIEventManager() {
+export default function Eventure() {
   const [currentView, setCurrentView] = React.useState<
     "landing" | "eventManager" | "eventDetails"
   >("landing");
