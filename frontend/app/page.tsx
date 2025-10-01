@@ -523,6 +523,7 @@ export default function AIEventManager() {
               )}
               {activeTab === "googlemeet" && (
                 <GoogleMeetManager
+                  eventId={selectedEvent._id}
                   eventData={{
                     name: selectedEvent.name,
                     datetime: selectedEvent.datetime,
@@ -770,6 +771,7 @@ export default function AIEventManager() {
               )}
               {activeTab === "googlemeet" && (
                 <GoogleMeetManager
+                  eventId={""} // New events don't have ID yet
                   eventData={{
                     name: eventData.eventName,
                     datetime: eventData.dateTime,

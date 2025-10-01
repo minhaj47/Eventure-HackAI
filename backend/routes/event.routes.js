@@ -9,6 +9,7 @@ import {
     generateEventAnnouncement,
     generateEventRegistrationForm,
     generateGoogleForm,
+    getEventGoogleMeets,
     getEventById,
     getUserEvents,
     sendBulkEventNotification,
@@ -33,6 +34,9 @@ eventRouter.get("/all",isAuth,getUserEvents)
 // Configuration routes (must be before parameterized routes)
 eventRouter.get("/google-meet-config", checkGoogleMeetConfig)
 eventRouter.get("/google-form-config", checkGoogleFormConfig)
+
+// Google Meet specific routes (must be before generic /:eventId route)
+eventRouter.get("/:eventId/google-meets", isAuth, getEventGoogleMeets)
 
 eventRouter.get("/:eventId",isAuth,getEventById) // Get single event by ID
 eventRouter.put("/update/:eventId",isAuth,updateEvent) // Restore auth

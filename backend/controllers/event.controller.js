@@ -1143,6 +1143,7 @@ export const createGoogleMeet = async (req, res) => {
     console.log('SMYTHOS_AGENT_URL:', process.env.SMYTHOS_AGENT_URL);
     
     const {
+      eventId,
       meetingTitle,
       startDateTime,
       endDateTime,
@@ -1151,10 +1152,19 @@ export const createGoogleMeet = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!meetingTitle || !startDateTime || !endDateTime) {
+    if (!eventId || !meetingTitle || !startDateTime || !endDateTime) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: meetingTitle, startDateTime, and endDateTime are required"
+        message: "Missing required fields: eventId, meetingTitle, startDateTime, and endDateTime are required"
+      });
+    }
+
+    // Verify event exists and user has access
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found"
       });
     }
 
@@ -1197,6 +1207,28 @@ export const createGoogleMeet = async (req, res) => {
     });
 
     console.log('Google Meet creation result:', result);
+
+    // If meeting creation was successful, store it in the database
+    if (result.success) {
+      const meetingData = {
+        meetingTitle: result.meetingTitle || meetingTitle,
+        meetingUrl: result.meetingUrl || result.displayData?.meetLink,
+        meetingId: result.meetingId || result.displayData?.eventId,
+        calendarLink: result.calendarUrl || result.displayData?.calendarLink,
+        calendarEventId: result.calendarEventId || result.displayData?.eventId,
+        editorEmail: finalEditorEmail,
+        startDateTime: new Date(startDateTime),
+        endDateTime: new Date(endDateTime),
+        createdBy: req.user?.email || 'system'
+      };
+
+      // Add meeting to event's googleMeets array
+      event.googleMeets.push(meetingData);
+      await event.save();
+
+      console.log('Google Meet saved to database for event:', eventId);
+    }
+
     res.status(200).json({
       success: true,
       ...result
@@ -1207,6 +1239,47 @@ export const createGoogleMeet = async (req, res) => {
     res.status(error.status || 500).json({
       success: false,
       message: error.error || error.message || 'Failed to create Google Meet'
+    });
+  }
+};
+
+/**
+ * Get all Google Meets for a specific event
+ */
+export const getEventGoogleMeets = async (req, res) => {
+  try {
+    console.log('=== GET EVENT GOOGLE MEETS ===');
+    const { eventId } = req.params;
+    
+    if (!eventId) {
+      return res.status(400).json({
+        success: false,
+        message: "Event ID is required"
+      });
+    }
+
+    // Get event with Google Meets
+    const event = await Event.findById(eventId).select('googleMeets eventName');
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found"
+      });
+    }
+
+    console.log(`Found ${event.googleMeets.length} Google Meets for event: ${event.eventName}`);
+
+    res.status(200).json({
+      success: true,
+      eventName: event.eventName,
+      meetings: event.googleMeets || []
+    });
+
+  } catch (error) {
+    console.error('Error fetching Google Meets:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch Google Meets'
     });
   }
 };

@@ -5,22 +5,8 @@ import { useSession } from 'next-auth/react';
 import { Calendar, Clock, Copy, Video, RefreshCw, MapPin, Plus, CheckCircle, User } from 'lucide-react';
 import { Button, Card, Input, TextArea } from "./ui";
 
-interface MeetingFormData {
-  meetingTitle: string;
-  startDateTime: string;
-  endDateTime: string;
-  editorEmail: string;
-  description: string;
-}
-
-interface EventData {
-  eventName: string;
-  eventDate: string;
-  eventTime: string;
-  eventLocation: string;
-}
-
 interface GoogleMeetManagerProps {
+  eventId: string;
   eventData: {
     name: string;
     datetime: string;
@@ -39,7 +25,7 @@ interface GoogleMeetData {
 }
 
 interface GoogleMeetResponse {
-  success: boolean;
+  success?: boolean;
   meetingTitle: string;
   meetingUrl: string;
   meetingId: string;
@@ -49,6 +35,8 @@ interface GoogleMeetResponse {
   calendarLink?: string;
   editorEmail?: string;
   instructions: string;
+  createdAt?: string;
+  createdBy?: string;
   displayData?: {
     title: string;
     meetLink: string;
@@ -61,12 +49,16 @@ interface GoogleMeetResponse {
 }
 
 export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
+  eventId,
   eventData,
 }) => {
   const { data: session, status } = useSession();
   const [isCreating, setIsCreating] = useState(false);
   const [createdMeeting, setCreatedMeeting] = useState<GoogleMeetResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [existingMeetings, setExistingMeetings] = useState<GoogleMeetResponse[]>([]);
+  const [isLoadingMeetings, setIsLoadingMeetings] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   
   // Check authentication status using NextAuth session
   const isAuthenticated = status === "authenticated" && session?.user;
@@ -134,6 +126,44 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
     return null;
   };
 
+  // Load existing meetings for the event
+  const loadExistingMeetings = React.useCallback(async () => {
+    if (!eventId) {
+      console.log('No eventId provided, skipping meeting load');
+      return;
+    }
+
+    setIsLoadingMeetings(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/event/${eventId}/google-meets`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Loaded existing meetings:', data);
+        setExistingMeetings(data.meetings || []);
+      } else {
+        console.error('Failed to load existing meetings:', response.statusText);
+      }
+    } catch (err) {
+      console.error('Error loading existing meetings:', err);
+    } finally {
+      setIsLoadingMeetings(false);
+    }
+  }, [eventId]);
+
+  // Load existing meetings when component mounts or eventId changes
+  React.useEffect(() => {
+    if (eventId) {
+      loadExistingMeetings();
+    }
+  }, [eventId, loadExistingMeetings]);
+
   const handleCreateMeeting = async () => {
     const validationError = validateMeetingData();
     if (validationError) {
@@ -152,6 +182,7 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
 
       // Convert datetime-local format to ISO string
       const requestData = {
+        eventId: eventId,
         ...meetingData,
         startDateTime: new Date(meetingData.startDateTime).toISOString(),
         endDateTime: new Date(meetingData.endDateTime).toISOString(),
@@ -194,6 +225,11 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
         setCreatedMeeting(fallbackResponse);
       } else {
         setCreatedMeeting(meetingResponse);
+        // Reload existing meetings if we have an eventId
+        if (eventId) {
+          await loadExistingMeetings();
+          setShowCreateForm(false); // Hide create form after successful creation
+        }
       }
     } catch (err) {
       console.error('Failed to create Google Meet:', err);
@@ -206,6 +242,7 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
   const handleRefresh = () => {
     setCreatedMeeting(null);
     setError(null);
+    setShowCreateForm(true); // Show create form when refresh is clicked
     // Reset form to default values
     setMeetingData({
       meetingTitle: eventData.name || "",
@@ -238,42 +275,87 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
           <Video className="h-6 w-6 text-cyan-400" />
           <h2 className="text-2xl font-bold text-white">Google Meet</h2>
         </div>
-        {createdMeeting && (
-          <Button
-            onClick={handleRefresh}
-            label="Create Another"
-            icon={<RefreshCw className="h-4 w-4" />}
-            variant="secondary"
-          />
-        )}
+        <div className="flex items-center gap-3">
+          {/* Show Create New Meeting button when there are existing meetings */}
+          {eventId && existingMeetings.length > 0 && (
+            <Button
+              onClick={() => setShowCreateForm(true)}
+              label="Create New Meeting"
+              icon={<Plus className="h-4 w-4" />}
+              variant="primary"
+            />
+          )}
+          {/* Show Create Another button when a meeting was just created */}
+          {createdMeeting && (
+            <Button
+              onClick={handleRefresh}
+              label="Create Another"
+              icon={<RefreshCw className="h-4 w-4" />}
+              variant="secondary"
+            />
+          )}
+        </div>
       </div>
 
-      {/* Event Context */}
-      <Card
-        title="Event Details"
-        icon={<Calendar className="h-5 w-5" />}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-2 text-gray-300">
-            <Calendar className="h-4 w-4 text-cyan-400" />
-            <span>{eventData.name}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-300">
-            <Clock className="h-4 w-4 text-cyan-400" />
-            <span>{eventData.datetime ? new Date(eventData.datetime).toLocaleDateString() : 'Not set'}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-300">
-            <MapPin className="h-4 w-4 text-cyan-400" />
-            <span>{eventData.location || 'Online'}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-300">
-            <span className="inline-block w-2 h-2 bg-cyan-400 rounded-full"></span>
-            <span>{eventData.eventType}</span>
-          </div>
-        </div>
-      </Card>
+      {/* Display existing meetings */}
+      {eventId && existingMeetings.length > 0 && (
+        <Card
+          title={`Existing Google Meets`}
+          icon={<Video className="h-5 w-5 text-blue-400" />}
+        >
+          <div className="space-y-4">
+            {existingMeetings.map((meeting, index) => (
+              <div key={index} className="p-4 bg-gray-800/30 border border-gray-600/30 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-green-400">{meeting.meetingTitle}</h4>
+                    <p className="text-gray-400 text-sm">
+                      Created {meeting.createdAt ? new Date(meeting.createdAt).toLocaleDateString() : 'Recently'}
+                      {meeting.createdBy && ` by ${meeting.createdBy}`}
+                    </p>
+                  </div>
+                </div>
 
-      {status === "loading" ? (
+                {/* Meeting Actions */}
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={() => window.open(meeting.meetingUrl, '_blank')}
+                    label="Join Meeting"
+                    icon={<Video className="h-4 w-4" />}
+                    variant="primary"
+                  />
+                  <Button
+                    onClick={() => copyToClipboard(meeting.meetingUrl, 'Meeting URL')}
+                    label="Copy Link"
+                    icon={<Copy className="h-4 w-4" />}
+                    variant="secondary"
+                  />
+                  {meeting.calendarLink && (
+                    <Button
+                      onClick={() => window.open(meeting.calendarLink, '_blank')}
+                      label="View Calendar"
+                      icon={<Calendar className="h-4 w-4" />}
+                      variant="primary"
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+            
+
+          </div>
+        </Card>
+      )}
+
+     
+
+      {/* Show create form when: no eventId (new event), no existing meetings, or user clicked create new */}
+      {(showCreateForm || !eventId || (eventId && existingMeetings.length === 0)) && (
+        <>
+          {status === "loading" ? (
         /* Loading Session */
         <Card
           title="Loading..."
@@ -464,6 +546,8 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
 
           </div>
         </Card>
+      )}
+        </>
       )}
 
       {/* Help Section */}
