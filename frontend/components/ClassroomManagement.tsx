@@ -12,7 +12,7 @@ import {
 import React, { useState } from "react";
 import { createClassroom } from "../services/contentGenerationApi";
 import { updateEventClassroom, sendClassroomAnnouncement, generateEventAnnouncement } from "../services/apiService";
-import { Card } from "./ui";
+import { Card, Toast, useToast } from "./ui";
 
 interface ClassroomManagementProps {
   eventData: {
@@ -65,6 +65,9 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
   eventId,
   onClassroomUpdate,
 }) => {
+  // Toast notifications
+  const { toasts, showToast, removeToast } = useToast();
+
   // Initialize with existing classroom data if available
   const [classrooms, setClassrooms] = useState<Classroom[]>(
     eventData.classroomcode && eventData.classroomlink && eventData.className
@@ -148,7 +151,7 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
           console.log('Update result:', updateResult);
 
           if (updateResult.success) {
-            alert("Classroom created and saved to event successfully!");
+            showToast("success", "Classroom Created", "Classroom created and saved to event successfully!");
             
             // Call the callback to update parent component state
             onClassroomUpdate?.({
@@ -157,14 +160,14 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
               classroomlink: newClassroomItem.link,
             });
           } else {
-            alert("Classroom created, but failed to save to event. You can update it manually.");
+            showToast("warning", "Classroom Created", "Classroom created, but failed to save to event. You can update it manually.");
           }
         } catch (error) {
           console.error('Failed to save classroom data to event:', error);
           alert("Classroom created, but failed to save to event. You can update it manually.");
         }
       } else {
-        alert("Classroom created successfully!");
+        showToast("success", "Success", "Classroom created successfully!");
       }
 
       // Reset form after successful creation
@@ -227,7 +230,7 @@ export const ClassroomManagement: React.FC<ClassroomManagementProps> = ({
 
   const regenerateAnnouncement = async () => {
     if (!regenerationSuggestions.trim() || !selectedClassroom) {
-      alert("Please provide suggestions for regeneration");
+      showToast("warning", "Suggestions Required", "Please provide suggestions for regeneration.");
       return;
     }
 
@@ -253,7 +256,7 @@ Previous announcement was generated. User feedback for improvement: ${regenerati
       setRegenerationSuggestions("");
     } catch (error) {
       console.error("Failed to regenerate announcement:", error);
-      alert("Failed to regenerate announcement. Please try again.");
+      showToast("error", "Regeneration Failed", "Failed to regenerate announcement. Please try again.");
     } finally {
       setIsGeneratingAnnouncement(false);
     }
@@ -271,15 +274,15 @@ Previous announcement was generated. User feedback for improvement: ${regenerati
       });
 
       if (result.success) {
-        alert("Announcement sent successfully!");
+        showToast("success", "Announcement Sent", "Announcement sent successfully!");
         setAnnouncementPrompt("");
         setGeneratedAnnouncement("");
       } else {
-        alert("Failed to send announcement: " + (result.message || "Unknown error"));
+        showToast("error", "Send Failed", "Failed to send announcement: " + (result.message || "Unknown error"));
       }
     } catch (error) {
       console.error("Failed to send announcement:", error);
-      alert("Failed to send announcement. Please try again.");
+      showToast("error", "Send Failed", "Failed to send announcement. Please try again.");
     } finally {
       setIsSendingAnnouncement(false);
     }
@@ -289,7 +292,32 @@ Previous announcement was generated. User feedback for improvement: ${regenerati
   // Removed manual classroom update functionality due to backend connectivity issues
 
   return (
-    <Card title="Classroom Management" icon={<BookOpen className="h-6 w-6" />}>
+    <>
+      {/* Toast Notifications Container */}
+      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="flex flex-col items-center pt-4 sm:pt-6 md:pt-8 px-4 space-y-3">
+          {toasts.map((toast, index) => (
+            <div 
+              key={toast.id}
+              style={{ 
+                transform: `translateY(${index * 10}px)`,
+                zIndex: 60 + index 
+              }}
+              className="pointer-events-auto"
+            >
+              <Toast
+                id={toast.id}
+                type={toast.type}
+                title={toast.title}
+                message={toast.message}
+                onClose={removeToast}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <Card title="Classroom Management" icon={<BookOpen className="h-6 w-6" />}>
       <div className="space-y-6">
         {/* Manual classroom update section removed due to backend connectivity issues */}
 
@@ -594,5 +622,6 @@ Previous announcement was generated. User feedback for improvement: ${regenerati
         )}
       </div>
     </Card>
+    </>
   );
 };

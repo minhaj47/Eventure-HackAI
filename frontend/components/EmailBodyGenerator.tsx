@@ -1,7 +1,7 @@
 import { Edit3, Mail, RefreshCw, Sparkles } from "lucide-react";
 import React, { useState } from "react";
 import { generateEmailBody } from "../services/apiService";
-import { Card } from "./ui";
+import { Card, Toast, useToast } from "./ui";
 
 interface EmailBodyGeneratorProps {
   eventData: {
@@ -16,6 +16,9 @@ interface EmailBodyGeneratorProps {
 export const EmailBodyGenerator: React.FC<EmailBodyGeneratorProps> = ({
   eventData,
 }) => {
+  // Toast notifications
+  const { toasts, showToast, removeToast } = useToast();
+
   const [emailPrompt, setEmailPrompt] = useState("");
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
@@ -105,7 +108,7 @@ Questions? Contact us at: events@company.com`;
 
   const regenerateEmail = async () => {
     if (!regenerationSuggestions.trim()) {
-      alert("Please provide suggestions for regeneration");
+      showToast("warning", "Suggestions Required", "Please provide suggestions for regeneration.");
       return;
     }
 
@@ -142,14 +145,39 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
       setRegenerationSuggestions("");
     } catch (error) {
       console.error("Failed to regenerate email:", error);
-      alert("Failed to regenerate email. Please try again.");
+      showToast("error", "Regeneration Failed", "Failed to regenerate email. Please try again.");
     } finally {
       setIsGeneratingEmail(false);
     }
   };
 
   return (
-    <Card title="Email Body Generator" icon={<Mail className="h-6 w-6" />}>
+    <>
+      {/* Toast Notifications Container */}
+      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="flex flex-col items-center pt-4 sm:pt-6 md:pt-8 px-4 space-y-3">
+          {toasts.map((toast, index) => (
+            <div 
+              key={toast.id}
+              style={{ 
+                transform: `translateY(${index * 10}px)`,
+                zIndex: 60 + index 
+              }}
+              className="pointer-events-auto"
+            >
+              <Toast
+                id={toast.id}
+                type={toast.type}
+                title={toast.title}
+                message={toast.message}
+                onClose={removeToast}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <Card title="Email Body Generator" icon={<Mail className="h-6 w-6" />}>
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Email Prompt Input */}
@@ -173,7 +201,7 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
             </label>
             <select
               value={tone}
-              onChange={(e) => setTone(e.target.value as any)}
+              onChange={(e) => setTone(e.target.value as "professional" | "casual" | "formal")}
               className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600/30 rounded-xl text-white focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
             >
               <option value="professional">Professional</option>
@@ -318,5 +346,6 @@ Previous email was generated. User feedback: ${regenerationSuggestions}`;
         )}
       </div>
     </Card>
+    </>
   );
 };

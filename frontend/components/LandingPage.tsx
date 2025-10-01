@@ -19,6 +19,7 @@ import { BackendEvent, useEvents } from "../hooks/useEvents";
 import { Background } from "./Background";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
+import { Toast, useToast } from "./ui";
 
 interface Event {
   id: string;
@@ -45,6 +46,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onCreateEvent,
   onSelectEvent,
 }) => {
+  // Toast notifications
+  const { toasts, showToast, removeToast } = useToast();
+
   const { data: session, status } = useSession();
   const { syncGoogleAuthWithBackend } = useAuth();
   const { events: backendEvents, isLoading, error, fetchEvents, deleteEvent } = useEvents();
@@ -132,7 +136,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       // Events list will be automatically updated via the useEvents hook state change
     } catch (error) {
       console.error("Failed to delete event:", error);
-      alert("Failed to delete event. Please try again.");
+      showToast("error", "Delete Failed", "Failed to delete event. Please try again.");
     } finally {
       setDeletingEventId(null);
     }
@@ -277,12 +281,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   // User is signed in - show dashboard
   return (
-    <div
-      className="min-h-screen text-white font-sans antialiased relative overflow-hidden"
-      style={{
-        backgroundImage: "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
-      }}
-    >
+    <>
+      {/* Toast Notifications Container */}
+      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="flex flex-col items-center pt-4 sm:pt-6 md:pt-8 px-4 space-y-3">
+          {toasts.map((toast, index) => (
+            <div 
+              key={toast.id}
+              style={{ 
+                transform: `translateY(${index * 10}px)`,
+                zIndex: 60 + index 
+              }}
+              className="pointer-events-auto"
+            >
+              <Toast
+                id={toast.id}
+                type={toast.type}
+                title={toast.title}
+                message={toast.message}
+                onClose={removeToast}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div
+        className="min-h-screen text-white font-sans antialiased relative overflow-hidden"
+        style={{
+          backgroundImage: "linear-gradient(to top, #30cfd0 0%, #330867 100%)",
+        }}
+      >
       <Background />
       <Header onCreateEvent={onCreateEvent} />
 
@@ -469,5 +498,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </main>
       <Footer />
     </div>
+    </>
   );
 };
