@@ -216,9 +216,18 @@
                   },
                   "formDescription": {
                     "type": "string"
+                  },
+                  "editorEmail": {
+                    "type": "string"
+                  },
+                  "customFields": {
+                    "type": "array",
+                    "items": {}
                   }
                 },
-                "required": ["formTitle"]
+                "required": [
+                  "formTitle"
+                ]
               }
             }
           }

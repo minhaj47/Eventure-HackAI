@@ -24,7 +24,6 @@ interface LandingPageEvent {
   datetime: string;
   location: string;
   description: string;
-  attendeeCount: number;
   status: "upcoming" | "ongoing" | "completed";
   createdAt: string;
   registrationFormUrl?: string;
@@ -38,9 +37,6 @@ interface LandingPageEvent {
 interface Event extends LandingPageEvent {
   _id: string;
   eventType: PurposeType;
-  className?: string;
-  classroomcode?: string;
-  classroomlink?: string;
 }
 
 export default function AIEventManager() {
@@ -69,6 +65,55 @@ export default function AIEventManager() {
     }
     return false;
   });
+
+  // Function to refresh a single event's data
+  const refreshEventData = React.useCallback(async (eventId: string) => {
+    try {
+      console.log('=== REFRESHING EVENT DATA ===');
+      console.log('Event ID:', eventId);
+      
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE_URL}/api/event/${eventId}`, {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch event:', response.status, response.statusText);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('=== RECEIVED UPDATED EVENT DATA ===');
+      console.log('Updated event:', data.event);
+      
+      if (data.event) {
+        // Convert BackendEvent to Event format and update selectedEvent
+        const updatedEvent: Event = {
+          _id: data.event._id,
+          id: data.event._id,
+          name: data.event.eventName,
+          eventType: data.event.eventType as PurposeType,
+          datetime: data.event.dateTime,
+          location: data.event.location || "",
+          description: data.event.description || "",
+          status: new Date(data.event.dateTime) > new Date() ? "upcoming" : "completed",
+          createdAt: data.event.createdAt || new Date().toISOString(),
+          registrationFormUrl: data.event.registrationFormUrl,
+          registrationFormEditUrl: data.event.registrationFormEditUrl,
+          className: data.event.className,
+          classroomcode: data.event.classroomcode,
+          classroomlink: data.event.classroomlink,
+        };
+        
+        console.log('=== UPDATING SELECTED EVENT ===');
+        console.log('Updated selectedEvent:', updatedEvent);
+        setSelectedEvent(updatedEvent);
+      }
+    } catch (error) {
+      console.error('Error refreshing event data:', error);
+    }
+  }, []);
 
   // Save selectedEvent to localStorage whenever it changes
   React.useEffect(() => {
@@ -138,7 +183,6 @@ export default function AIEventManager() {
       datetime: createdEvent.dateTime,
       location: createdEvent.location || "",
       description: createdEvent.description || "",
-      attendeeCount: 0,
       status: new Date(createdEvent.dateTime) > new Date() ? "upcoming" : "completed",
       createdAt: new Date().toISOString(),
       registrationFormUrl: createdEvent.registrationFormUrl,
@@ -230,7 +274,6 @@ export default function AIEventManager() {
       ...event,
       _id: event.id, // Use id as _id for backward compatibility
       eventType: event.eventType as PurposeType,
-      className: event.className, // Ensure className is passed through
     };
     setSelectedEvent(extendedEvent);
     setCurrentView("eventDetails");
@@ -427,6 +470,12 @@ export default function AIEventManager() {
                         selectedEvent.registrationFormEditUrl,
                     }}
                     eventId={selectedEvent.id}
+                    onFormGenerated={() => {
+                      console.log('=== FORM GENERATED CALLBACK TRIGGERED ===');
+                      if (selectedEvent?._id) {
+                        refreshEventData(selectedEvent._id);
+                      }
+                    }}
                   />
                 </div>
               )}

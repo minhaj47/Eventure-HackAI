@@ -7,7 +7,7 @@ interface GoogleFormGeneratorProps {
   eventName?: string;
   existingFormUrl?: string;
   existingEditUrl?: string;
-  onFormGenerated?: (formData: any) => void;
+  onFormGenerated?: (formData: { formTitle: string; formUrl: string; editFormUrl: string; formId: string; instructions: string; }) => void;
 }
 
 export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
@@ -22,7 +22,7 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
   );
   const [formDescription, setFormDescription] = useState("");
   const [editorEmail, setEditorEmail] = useState("");
-  const [generatedForm, setGeneratedForm] = useState<any>(null);
+  const [generatedForm, setGeneratedForm] = useState<{ success: boolean; data: any[]; isExisting?: boolean; } | null>(null);
   const { generateForm, generateEventForm, isLoading, error } =
     useGoogleFormGeneration();
 
@@ -64,7 +64,7 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
     
     if (generatedForm?.success && generatedForm.data?.length > 0) {
       // Find the APIOutput result in the data array
-      const outputResult = generatedForm.data.find((item: any) => 
+      const outputResult = generatedForm.data.find((item: { name: string; result?: any }) => 
         item.name === "APIOutput"
       );
       

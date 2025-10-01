@@ -7,6 +7,7 @@ import {
     generateEventAnnouncement,
     generateEventRegistrationForm,
     generateGoogleForm,
+    getEventById,
     getUserEvents,
     sendBulkEventNotification,
     sendEventReminder,
@@ -26,6 +27,7 @@ console.log('updateEventClassroom function:', typeof updateEventClassroom);
 
 // Existing routes
 eventRouter.get("/all",isAuth,getUserEvents)
+eventRouter.get("/:eventId",isAuth,getEventById) // Get single event by ID
 eventRouter.put("/update/:eventId",isAuth,updateEvent) // Restore auth
 eventRouter.put("/update-classroom/:eventId",updateEventClassroom) // New classroom update route (temp no auth)
 console.log('Registered update-classroom route');
@@ -48,9 +50,9 @@ eventRouter.put("/update-classroom-test/:eventId", (req, res) => {
   res.json({ message: "Classroom update route accessible", eventId: req.params.eventId, body: req.body });
 });
 
-// Google Form generation routes (NO authentication required)
-eventRouter.post("/generate-google-form", generateGoogleForm)
-eventRouter.post("/:eventId/generate-registration-form", generateEventRegistrationForm)
+// Google Form generation routes (authentication required for user email)
+eventRouter.post("/generate-google-form", isAuth, generateGoogleForm)
+eventRouter.post("/:eventId/generate-registration-form", isAuth, generateEventRegistrationForm)
 eventRouter.get("/google-form-config", checkGoogleFormConfig)
 eventRouter.get("/test-form-creation", testFormCreation)
 

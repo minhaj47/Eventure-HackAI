@@ -10,17 +10,27 @@
     });S Google Form generation endpoints
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export interface CustomField {
+  type: string;
+  label: string;
+  required?: boolean;
+  options?: string[];
+  [key: string]: unknown;
+}
 
 export interface GoogleFormRequest {
   formTitle: string;
   formDescription?: string;
   editorEmail?: string;
+  customFields?: CustomField[];
 }
 
 export interface EventRegistrationFormRequest {
   editorEmail?: string;
   forceRegenerate?: boolean;
+  customFields?: CustomField[];
 }
 
 export interface GoogleFormResponse {
@@ -90,6 +100,7 @@ const makeApiRequest = async (
 export const generateGoogleForm = async (
   formData: GoogleFormRequest
 ): Promise<GoogleFormResponse> => {
+  console.log("Generating Google Form with data:", formData);
   try {
     const response = await makeApiRequest("/api/event/generate-google-form", {
       method: "POST",

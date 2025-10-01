@@ -13,11 +13,19 @@ class MockGoogleFormService {
      * @returns {Promise<Object>} Mock form creation response
      */
     async createGoogleForm(formData) {
-        const { formTitle, formDescription, editorEmail } = formData;
+        const { formTitle, formDescription, editorEmail, customFields } = formData;
 
         console.log('=== MOCK GOOGLE FORM CREATION START ===');
         console.log('Using mock service (SmythOS unavailable)');
         console.log('Form Title:', formTitle);
+        if (customFields && customFields.length > 0) {
+            console.log('Custom Fields:', customFields.length, 'fields provided');
+            customFields.forEach((field, index) => {
+                console.log(`  ${index + 1}. ${field.label} (${field.type})${field.required ? ' - Required' : ' - Optional'}`);
+            });
+        } else {
+            console.log('Custom Fields: Using default form fields');
+        }
 
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, this.mockDelay));

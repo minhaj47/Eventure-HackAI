@@ -223,6 +223,47 @@ export const getUserEvents = async (req, res) => {
   }
 };
 
+// Controller to get a single event by ID
+export const getEventById = async (req, res) => {
+  try {
+    console.log('=== BACKEND getEventById CALLED ===');
+    const eventId = req.params.eventId;
+    console.log('Event ID requested:', eventId);
+    
+    // Check if eventId is a valid MongoDB ObjectId format
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(eventId);
+    if (!isValidObjectId) {
+      console.log("Invalid ObjectId format provided:", eventId);
+      return res.status(400).json({ message: "Invalid event ID format" });
+    }
+
+    // Find the event by ID
+    const event = await Event.findById(eventId);
+    
+    if (!event) {
+      console.log("Event not found for ID:", eventId);
+      return res.status(404).json({ message: "Event not found" });
+    }
+    
+    console.log('=== EVENT FOUND ===');
+    console.log('Event data:', JSON.stringify(event, null, 2));
+    console.log('Form URLs:');
+    console.log('- Registration Form URL:', event.registrationFormUrl || 'NOT SET');
+    console.log('- Edit Form URL:', event.registrationFormEditUrl || 'NOT SET');
+    console.log('Classroom data:');
+    console.log('- Class Name:', event.className || 'NOT SET');
+    console.log('- Classroom Code:', event.classroomcode || 'NOT SET');
+    console.log('- Classroom Link:', event.classroomlink || 'NOT SET');
+
+    res.status(200).json({
+      message: "success",
+      event: event
+    });
+  } catch (error) {
+    console.error("Error fetching event by ID:", error);
+    res.status(500).json({ message: "Server error. Could not fetch event." });
+  }
+};
 
 export const updateEvent = async (req, res) => {
   try {
@@ -422,10 +463,38 @@ export const sendEventReminder = async (req, res) => {
   }
 };
 
-// Controller to generate Google Form for general use
+/**
+ * Controller to generate Google Form for general use
+ * 
+ * Expected Request Body:
+ * {
+ *   formTitle: string (required) - Title for the Google Form
+ *   formDescription?: string (optional) - Description for the form
+ *   editorEmail?: string (optional) - Email for edit access, defaults to current user
+ *   customFields?: Array<{
+ *     type: string (required) - Field type (text, email, etc.)
+ *     label: string (required) - Field label/name
+ *     required?: boolean (optional) - Whether field is required, defaults to false
+ *     options?: string[] (optional) - Options for select/radio fields
+ *   }>
+ * }
+ * 
+ * Response Format:
+ * {
+ *   success: boolean
+ *   data: {
+ *     formTitle: string
+ *     formUrl: string - Public form URL for responses
+ *     editFormUrl: string - Edit URL for form owner
+ *     formId: string - Google Form ID
+ *     instructions: string - Additional instructions
+ *   }
+ *   message: string
+ * }
+ */
 export const generateGoogleForm = async (req, res) => {
   try {
-    const { formTitle, formDescription, editorEmail } = req.body;
+    const { formTitle, formDescription, editorEmail, customFields } = req.body;
 
     // Validation
     if (!formTitle) {
@@ -435,11 +504,62 @@ export const generateGoogleForm = async (req, res) => {
       });
     }
 
+    // Validate customFields structure if provided
+    if (customFields && !Array.isArray(customFields)) {
+      return res.status(400).json({
+        success: false,
+        message: "customFields must be an array"
+      });
+    }
+
+    if (customFields && customFields.length > 0) {
+      // Validate each custom field has required properties
+      for (let i = 0; i < customFields.length; i++) {
+        const field = customFields[i];
+        if (!field.label || !field.type) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid custom field at index ${i}: label and type are required`
+          });
+        }
+      }
+    }
+
+    // Log the incoming request for debugging
+    console.log('=== GOOGLE FORM GENERATION REQUEST ===');
+    console.log('Form Title:', formTitle);
+    console.log('Form Description:', formDescription || 'Not provided');
+    console.log('Editor Email:', editorEmail || 'Not provided (will use default)');
+    console.log('Custom Fields:', customFields ? `Array with ${customFields.length} fields` : 'None');
+    
+    if (customFields && customFields.length > 0) {
+      console.log('Custom Fields Details:');
+      customFields.forEach((field, index) => {
+        console.log(`  ${index + 1}. ${field.label || 'No label'} (${field.type || 'no type'}) - ${field.required ? 'Required' : 'Optional'}`);
+      });
+    }
+    
+    console.log('Raw Request Body:', JSON.stringify(req.body, null, 2));
+
+    // Get user info for editor email if not provided
+    let finalEditorEmail = editorEmail;
+    if (!finalEditorEmail && req.userId) {
+      console.log('No editorEmail provided, fetching from authenticated user...');
+      const user = await User.findById(req.userId);
+      finalEditorEmail = user?.email;
+      console.log('✅ Using authenticated user email as editor:', finalEditorEmail);
+    } else if (finalEditorEmail) {
+      console.log('📧 Using provided editor email:', finalEditorEmail);
+    } else {
+      console.log('⚠️ No editor email available - form will be created without editor access');
+    }
+
     // Create Google Form using SmythOS
     const result = await googleFormService.createGoogleForm({
       formTitle,
       formDescription,
-      editorEmail
+      editorEmail: finalEditorEmail,
+      customFields
     });
 
     console.log('Google Form creation result:', result);
@@ -454,11 +574,85 @@ export const generateGoogleForm = async (req, res) => {
   }
 };
 
-// Controller to generate Google Form for a specific event
+/**
+ * Controller to generate Google Form for a specific event
+ * 
+ * URL Parameters:
+ * - eventId: string (required) - MongoDB ObjectId of the event
+ * 
+ * Expected Request Body:
+ * {
+ *   editorEmail?: string (optional) - Email for edit access, defaults to current user
+ *   forceRegenerate?: boolean (optional) - Force regeneration even if form exists
+ *   customFields?: Array<{
+ *     type: string (required) - Field type (text, email, etc.)
+ *     label: string (required) - Field label/name
+ *     required?: boolean (optional) - Whether field is required
+ *     options?: string[] (optional) - Options for select/radio fields
+ *   }> - Custom fields for the registration form
+ * }
+ * 
+ * Response Format:
+ * {
+ *   success: boolean
+ *   data: {
+ *     formTitle: string
+ *     formUrl: string - Public form URL for responses
+ *     editFormUrl: string - Edit URL for form owner  
+ *     formId: string - Google Form ID
+ *     instructions: string - Additional instructions
+ *   }
+ *   message: string
+ *   isExisting?: boolean - Whether form already existed
+ *   event: {
+ *     id: string
+ *     name: string
+ *     description: string
+ *   }
+ * }
+ * 
+ * Note: This endpoint automatically saves form URLs to the event database record
+ */
 export const generateEventRegistrationForm = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const { editorEmail, forceRegenerate } = req.body;
+    const { editorEmail, forceRegenerate, customFields } = req.body;
+
+    console.log('=== EVENT REGISTRATION FORM REQUEST ===');
+    console.log('Event ID:', eventId);
+    console.log('Editor Email:', editorEmail || 'Not provided (will use default)');
+    console.log('Force Regenerate:', forceRegenerate || false);
+    console.log('Custom Fields:', customFields ? `Array with ${customFields.length} fields` : 'None');
+    
+    if (customFields && customFields.length > 0) {
+      console.log('Custom Fields Details:');
+      customFields.forEach((field, index) => {
+        console.log(`  ${index + 1}. ${field.label || 'No label'} (${field.type || 'no type'}) - ${field.required ? 'Required' : 'Optional'}`);
+      });
+    }
+    
+    console.log('Raw Request Body:', JSON.stringify(req.body, null, 2));
+
+    // Validate customFields structure if provided
+    if (customFields && !Array.isArray(customFields)) {
+      return res.status(400).json({
+        success: false,
+        message: "customFields must be an array"
+      });
+    }
+
+    if (customFields && customFields.length > 0) {
+      // Validate each custom field has required properties
+      for (let i = 0; i < customFields.length; i++) {
+        const field = customFields[i];
+        if (!field.label || !field.type) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid custom field at index ${i}: label and type are required`
+          });
+        }
+      }
+    }
 
     // Find the event
     const event = await Event.findById(eventId);
@@ -493,20 +687,25 @@ export const generateEventRegistrationForm = async (req, res) => {
     // Get user info for organizer email if not provided
     let organizerEmail = editorEmail;
     if (!organizerEmail && req.userId) {
+      console.log('No editorEmail provided for event form, fetching from authenticated user...');
       const user = await User.findById(req.userId);
       organizerEmail = user?.email;
+      console.log('✅ Using authenticated user email as event form editor:', organizerEmail);
+    } else if (organizerEmail) {
+      console.log('📧 Using provided editor email for event form:', organizerEmail);
     }
     
-    // If still no organizer email, use a default or skip
+    // If still no organizer email, log warning
     if (!organizerEmail) {
-      console.warn('No organizer email provided for event registration form');
+      console.warn('⚠️ No organizer email available for event registration form - form will be created without editor access');
     }
 
-    // Create event registration form
+    // Create event registration form with custom fields if provided
     const result = await googleFormService.createEventRegistrationForm({
       title: event.eventName,
       description: event.description,
-      organizerEmail
+      organizerEmail,
+      customFields: customFields // Pass custom fields to service
     });
 
     // Update the event with the form URL

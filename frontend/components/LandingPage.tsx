@@ -27,7 +27,6 @@ interface Event {
   datetime: string;
   location: string;
   description: string;
-  attendeeCount: number;
   status: "upcoming" | "ongoing" | "completed";
   createdAt: string;
   registrationFormUrl?: string;
@@ -61,7 +60,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     datetime: event.dateTime,
     location: event.location,
     description: event.description || "",
-    attendeeCount: Math.floor(Math.random() * 200) + 1, // Random for now since backend doesn't track this yet
     status: new Date(event.dateTime) > new Date() ? "upcoming" : "completed",
     createdAt: event.createdAt,
     registrationFormUrl: event.registrationFormUrl,
@@ -299,9 +297,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </div>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
         {/* Dashboard Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="p-6 bg-gradient-to-br from-blue-900/20 to-cyan-900/20 rounded-2xl border border-blue-500/20">
             <div className="flex items-center justify-between">
               <div>
@@ -313,23 +311,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-blue-400" />
-            </div>
-          </div>
-
-          <div className="p-6 bg-gradient-to-br from-green-900/20 to-teal-900/20 rounded-2xl border border-green-500/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-400 text-sm font-medium">
-                  Total Attendees
-                </p>
-                <p className="text-2xl font-bold text-white">
-                  {userEvents.reduce(
-                    (sum, event) => sum + event.attendeeCount,
-                    0
-                  )}
-                </p>
-              </div>
-              <Users className="h-8 w-8 text-green-400" />
             </div>
           </div>
 
@@ -461,10 +442,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
                           {event.location}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {event.attendeeCount} attendees
                         </span>
                       </div>
                     </div>

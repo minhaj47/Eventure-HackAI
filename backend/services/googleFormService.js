@@ -17,24 +17,42 @@ class GoogleFormService {
      * @param {string} formData.formTitle - The title for the Google Form
      * @param {string} [formData.formDescription] - Optional description for the form
      * @param {string} [formData.editorEmail] - Optional editor email
+     * @param {Array} [formData.customFields] - Optional array of custom fields to add to the form
      * @returns {Promise<Object>} Form creation response
      */
     async createGoogleForm(formData) {
         try {
-            const { formTitle, formDescription, editorEmail } = formData;
+            const { formTitle, formDescription, editorEmail, customFields } = formData;
 
             console.log('Creating Google Form via SmythOS API...');
             console.log('Form Title:', formTitle);
-
-            if (!formTitle) {
+            if (customFields && customFields.length > 0) {
+                console.log('Custom Fields:', customFields.length, 'fields provided');
+                customFields.forEach((field, index) => {
+                    console.log(`  ${index + 1}. ${field.label} (${field.type})${field.required ? ' - Required' : ' - Optional'}`);
+                });
+            } else {
+                console.log('Custom Fields: Using default form fields');
+            }            if (!formTitle) {
                 throw new Error('Form title is required');
             }
 
+            // SmythOS API expects specific field structure for Google Form generation
             const requestPayload = {
-                formTitle,
-                ...(formDescription && { formDescription }),
-                ...(editorEmail && { editorEmail })
+                formTitle: formTitle,
+                formDescription: formDescription || `Registration form for ${formTitle}`,
+                editorEmail: editorEmail || '',
+                customFields: customFields || [
+                    { type: 'text', label: 'Name', required: true },
+                    { type: 'email', label: 'Email', required: true },
+                    { type: 'text', label: 'WhatsApp Number', required: false },
+                    { type: 'text', label: 'Telegram Username', required: false }
+                ]
             };
+
+            console.log('=== SENDING REQUEST TO SMYTHOS ===');
+            console.log('Endpoint:', this.smythosEndpoint);
+            console.log('Payload:', JSON.stringify(requestPayload, null, 2));
 
             const response = await axios.post(this.smythosEndpoint, requestPayload, {
                 headers: {
@@ -54,6 +72,35 @@ class GoogleFormService {
                 console.error('SmythOS returned an error:', errorMessage);
                 throw new Error(errorMessage);
             }
+
+            // Only use mock fallback if SmythOS explicitly returns new API format without URLs
+            if (responseData._newApiFormat) {
+                console.log('SmythOS returned new API format without direct URLs');
+                
+                // Try mock service as fallback only if explicitly enabled
+                if (this.useMockFallback) {
+                    try {
+                        const mockResult = await this.mockService.createGoogleForm(formData);
+                        console.log('Using mock service as fallback for new API format');
+                        return mockResult;
+                    } catch (mockError) {
+                        console.error('Mock service fallback failed:', mockError);
+                    }
+                }
+                
+                // Return the original response even without URLs
+                return {
+                    success: true,
+                    data: responseData,
+                    message: 'Google Form created successfully (new API format, URLs not available)'
+                };
+            }
+
+            // Log the parsed response for debugging
+            console.log('=== FINAL PARSED RESPONSE ===');
+            console.log('formUrl:', responseData.formUrl);
+            console.log('editFormUrl:', responseData.editFormUrl);
+            console.log('formId:', responseData.formId);
 
             return {
                 success: true,
@@ -134,9 +181,40 @@ class GoogleFormService {
                         instructions: formDetails.instructions || ''
                     };
                 }
+
+                // Handle new SmythOS response format with Response.replies
+                if (responseData.result && responseData.result.Response && responseData.result.Response.replies) {
+                    console.log('Found new SmythOS response format with replies');
+                    console.log('Response structure:', JSON.stringify(responseData.result.Response, null, 2));
+                    
+                    // For now, return a basic structure since the new API doesn't directly provide URLs
+                    // This indicates the form was created but we need to handle it differently
+                    return {
+                        formTitle: 'Form Created Successfully',
+                        formUrl: '', // New API format doesn't provide direct URLs
+                        editFormUrl: '',
+                        formId: responseData.result.Response.writeControl?.requiredRevisionId || '',
+                        instructions: 'Google Form has been created successfully. The new API format is being processed.',
+                        _newApiFormat: true,
+                        _rawResponse: responseData.result.Response
+                    };
+                }
                 
+                // Check if response has direct form URLs at top level
+                if (responseData.formUrl || responseData.editFormUrl) {
+                    console.log('Found form URLs at top level of response');
+                    return {
+                        formTitle: responseData.formTitle || '',
+                        formUrl: responseData.formUrl || '',
+                        editFormUrl: responseData.editFormUrl || '',
+                        formId: responseData.formId || '',
+                        instructions: responseData.instructions || ''
+                    };
+                }
+
                 // Direct object response
-                console.log('Using direct object response');
+                console.log('Using direct object response (no URLs found)');
+                console.log('Response keys:', Object.keys(responseData));
                 return responseData;
             }
 
@@ -239,20 +317,24 @@ class GoogleFormService {
      * @param {string} eventData.title - Event title
      * @param {string} [eventData.description] - Event description
      * @param {string} [eventData.organizerEmail] - Organizer email for edit access
+     * @param {Array} [eventData.customFields] - Custom fields for the registration form
      * @returns {Promise<Object>} Form creation response
      */
     async createEventRegistrationForm(eventData) {
-        const { title, description, organizerEmail } = eventData;
+        const { title, description, organizerEmail, customFields } = eventData;
 
         const formTitle = `${title} - Registration Form`;
         const formDescription = description 
             ? `Registration form for ${title}. ${description}`
             : `Please fill out this form to register for ${title}`;
 
+        console.log('Creating event registration form with custom fields:', customFields ? customFields.length : 0);
+
         return await this.createGoogleForm({
             formTitle,
             formDescription,
-            editorEmail: organizerEmail
+            editorEmail: organizerEmail,
+            customFields: customFields // Pass custom fields to main form creation method
         });
     }
 }
