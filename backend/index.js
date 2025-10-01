@@ -21,6 +21,7 @@ app.use(
             origin: [
                 "http://localhost:3000", // Next.js default port
                 "http://localhost:3001", // Next.js alternative port
+                "http://localhost:3002", // Next.js alternative port (current)
                 "http://localhost:5173", // Vite default port
                 process.env.FRONTEND_URL // Production frontend URL
             ].filter(Boolean),

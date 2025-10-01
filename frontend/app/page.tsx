@@ -12,6 +12,7 @@ import {
   LandingPage,
   RegistrationFields,
 } from "../components";
+import { GoogleMeetManager } from "../components/GoogleMeetManager";
 import { useEventManager } from "../hooks/useEventManager";
 import { PurposeType } from "../types";
 import { BackendEvent } from "../hooks/useEvents";
@@ -146,8 +147,8 @@ export default function AIEventManager() {
       if (savedTab && 
           ((savedTab === 'registration' && hasRegistration) ||
            (savedTab === 'classroom' && hasClassroom) ||
-           ['ai', 'banner', 'reminders'].includes(savedTab))) {
-        setActiveTab(savedTab as "ai" | "banner" | "registration" | "reminders" | "classroom");
+           ['ai', 'banner', 'reminders', 'googlemeet'].includes(savedTab))) {
+        setActiveTab(savedTab as "ai" | "banner" | "registration" | "reminders" | "classroom" | "googlemeet");
       } else {
         // Otherwise, choose based on what exists
         if (hasRegistration && hasClassroom) {
@@ -236,13 +237,13 @@ export default function AIEventManager() {
   } = useEventManager(handleEventCreated);
 
   const [activeTab, setActiveTab] = React.useState<
-    "ai" | "banner" | "registration" | "reminders" | "classroom"
+    "ai" | "banner" | "registration" | "reminders" | "classroom" | "googlemeet"
   >(() => {
     // Try to restore active tab from localStorage
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('eventure-active-tab');
-      if (saved && ['ai', 'banner', 'registration', 'reminders', 'classroom'].includes(saved)) {
-        return saved as "ai" | "banner" | "registration" | "reminders" | "classroom";
+      if (saved && ['ai', 'banner', 'registration', 'reminders', 'classroom', 'googlemeet'].includes(saved)) {
+        return saved as "ai" | "banner" | "registration" | "reminders" | "classroom" | "googlemeet";
       }
     }
     return "ai";
@@ -400,6 +401,7 @@ export default function AIEventManager() {
                 { label: "Attendee Registration", key: "registration" },
                 { label: "Mail", key: "reminders" },
                 { label: "Classroom", key: "classroom" },
+                { label: "Google Meet", key: "googlemeet" },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -416,6 +418,7 @@ export default function AIEventManager() {
                         | "registration"
                         | "reminders"
                         | "classroom"
+                        | "googlemeet"
                     )
                   }
                 >
@@ -515,6 +518,17 @@ export default function AIEventManager() {
                       classroomcode: classroomData.classroomcode,
                       classroomlink: classroomData.classroomlink,
                     } : null);
+                  }}
+                />
+              )}
+              {activeTab === "googlemeet" && (
+                <GoogleMeetManager
+                  eventData={{
+                    name: selectedEvent.name,
+                    datetime: selectedEvent.datetime,
+                    location: selectedEvent.location,
+                    eventType: selectedEvent.eventType,
+                    description: selectedEvent.description,
                   }}
                 />
               )}
@@ -665,6 +679,7 @@ export default function AIEventManager() {
                 { label: "Attendee Registration", key: "registration" },
                 { label: "Mail", key: "reminders" },
                 { label: "Classroom", key: "classroom" },
+                { label: "Google Meet", key: "googlemeet" },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -681,6 +696,7 @@ export default function AIEventManager() {
                         | "registration"
                         | "reminders"
                         | "classroom"
+                        | "googlemeet"
                     )
                   }
                 >
@@ -750,6 +766,17 @@ export default function AIEventManager() {
                     classroomlink: eventData.classroomlink,
                   }}
                   eventId={undefined} // New events don't have ID yet
+                />
+              )}
+              {activeTab === "googlemeet" && (
+                <GoogleMeetManager
+                  eventData={{
+                    name: eventData.eventName,
+                    datetime: eventData.dateTime,
+                    location: eventData.location,
+                    eventType: eventData.eventType,
+                    description: eventData.description,
+                  }}
                 />
               )}
             </div>

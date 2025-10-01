@@ -2,6 +2,8 @@ import express from "express"
 import {
     addEvent,
     checkGoogleFormConfig,
+    checkGoogleMeetConfig,
+    createGoogleMeet,
     deleteEvent,
     fetchEventParticipants,
     generateEventAnnouncement,
@@ -27,6 +29,11 @@ console.log('updateEventClassroom function:', typeof updateEventClassroom);
 
 // Existing routes
 eventRouter.get("/all",isAuth,getUserEvents)
+
+// Configuration routes (must be before parameterized routes)
+eventRouter.get("/google-meet-config", checkGoogleMeetConfig)
+eventRouter.get("/google-form-config", checkGoogleFormConfig)
+
 eventRouter.get("/:eventId",isAuth,getEventById) // Get single event by ID
 eventRouter.put("/update/:eventId",isAuth,updateEvent) // Restore auth
 eventRouter.put("/update-classroom/:eventId",updateEventClassroom) // New classroom update route (temp no auth)
@@ -53,8 +60,10 @@ eventRouter.put("/update-classroom-test/:eventId", (req, res) => {
 // Google Form generation routes (authentication required for user email)
 eventRouter.post("/generate-google-form", isAuth, generateGoogleForm)
 eventRouter.post("/:eventId/generate-registration-form", isAuth, generateEventRegistrationForm)
-eventRouter.get("/google-form-config", checkGoogleFormConfig)
 eventRouter.get("/test-form-creation", testFormCreation)
+
+// Google Meet creation routes (authentication required for user email)
+eventRouter.post("/create-google-meet", isAuth, createGoogleMeet)
 
 // AI-powered announcement generation route (NO authentication required)
 eventRouter.post("/generate-announcement", generateEventAnnouncement)

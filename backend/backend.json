@@ -245,6 +245,57 @@
           }
         }
       }
+    },
+    "/api/create_google_meet": {
+      "post": {
+        "summary": "Create a Google Meet meeting with admin permissions. Provide meeting title, start/end times, and editor email for admin access",
+        "operationId": "create_google_meet",
+        "x-openai-isConsequential": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "meetingTitle": {
+                    "type": "string"
+                  },
+                  "startDateTime": {
+                    "type": "string"
+                  },
+                  "endDateTime": {
+                    "type": "string"
+                  },
+                  "editorEmail": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "meetingTitle",
+                  "startDateTime",
+                  "endDateTime"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

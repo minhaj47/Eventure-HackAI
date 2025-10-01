@@ -2,6 +2,7 @@ import Event from "../models/event.model.js"; // adjust the path as needed
 import User from "../models/user.model.js";
 import eventUpdateService from "../services/eventUpdateService.js";
 import googleFormService from "../services/googleFormService.js";
+import GoogleMeetService from "../services/googleMeetService.js";
 import { extractAllContacts } from "../services/contactExtractionService.js";
 import axios from "axios";
 
@@ -1104,6 +1105,130 @@ export const generateEventAnnouncement = async (req, res) => {
       error: "Failed to generate event announcement. Please try again.",
       details: error.message,
       smythosResponse: error.response?.data
+    });
+  }
+};
+
+/**
+ * Controller to create Google Meet meeting
+ * 
+ * Expected Request Body:
+ * {
+ *   meetingTitle: string (required) - Title for the Google Meet
+ *   startDateTime: string (required) - Start date and time in ISO format
+ *   endDateTime: string (required) - End date and time in ISO format
+ *   editorEmail?: string (optional) - Email for admin access, defaults to current user
+ *   description?: string (optional) - Meeting description
+ * }
+ * 
+ * Returns:
+ * {
+ *   success: boolean,
+ *   meetingTitle: string,
+ *   meetingUrl: string,
+ *   meetingId: string,
+ *   startDateTime: string,
+ *   endDateTime: string,
+ *   calendarEventId: string,
+ *   instructions: string
+ * }
+ */
+export const createGoogleMeet = async (req, res) => {
+  try {
+    console.log('=== CREATE GOOGLE MEET CONTROLLER CALLED ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('User from auth:', req.user ? { id: req.user.id, email: req.user.email } : 'No auth user');
+    console.log('Environment check:');
+    console.log('SMYTHOS_GOOGLE_MEET_URL:', process.env.SMYTHOS_GOOGLE_MEET_URL);
+    console.log('SMYTHOS_AGENT_URL:', process.env.SMYTHOS_AGENT_URL);
+    
+    const {
+      meetingTitle,
+      startDateTime,
+      endDateTime,
+      editorEmail,
+      description
+    } = req.body;
+
+    // Validate required fields
+    if (!meetingTitle || !startDateTime || !endDateTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: meetingTitle, startDateTime, and endDateTime are required"
+      });
+    }
+
+    // Validate date format and logic
+    const startDate = new Date(startDateTime);
+    const endDate = new Date(endDateTime);
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format. Please use ISO format (e.g., 2024-01-01T10:00:00Z)"
+      });
+    }
+
+    if (endDate <= startDate) {
+      return res.status(400).json({
+        success: false,
+        message: "End time must be after start time"
+      });
+    }
+
+    // Determine editor email - use provided email or fall back to authenticated user
+    let finalEditorEmail = editorEmail;
+    if (!finalEditorEmail && req.user && req.user.email) {
+      finalEditorEmail = req.user.email;
+      console.log('⚡ Using authenticated user email as editor:', finalEditorEmail);
+    } else if (!finalEditorEmail) {
+      console.log('⚠️ No editor email available - meeting will be created without editor access');
+    }
+
+    // Create Google Meet using SmythOS
+    const googleMeetService = new GoogleMeetService();
+    console.log('GoogleMeetService instantiated in controller with endpoint:', googleMeetService.smythosEndpoint);
+    const result = await googleMeetService.createGoogleMeet({
+      meetingTitle,
+      startDateTime,
+      endDateTime,
+      editorEmail: finalEditorEmail,
+      description
+    });
+
+    console.log('Google Meet creation result:', result);
+    res.status(200).json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Google Meet creation error:', error);
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.error || error.message || 'Failed to create Google Meet'
+    });
+  }
+};
+
+/**
+ * Controller to check SmythOS Google Meet service configuration
+ */
+export const checkGoogleMeetConfig = async (req, res) => {
+  try {
+    const googleMeetService = new GoogleMeetService();
+    const validation = googleMeetService.validateConfiguration();
+    
+    res.status(200).json({
+      success: true,
+      configuration: validation
+    });
+
+  } catch (error) {
+    console.error('Google Meet configuration check error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to check Google Meet configuration'
     });
   }
 };
