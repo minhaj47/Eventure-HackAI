@@ -10,7 +10,7 @@
     });S Google Form generation endpoints
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://iman-production.up.railway.app";
 
 export interface CustomField {
   type: string;

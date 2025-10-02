@@ -153,7 +153,10 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
     }
 
     try {
-      const response = await fetch(`/api/meetings/${eventId}`);
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://iman-production.up.railway.app";
+      const response = await fetch(`${API_BASE_URL}/api/event/${eventId}/google-meets`, {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Failed to fetch meetings");
 
       const data = await response.json();
@@ -200,7 +203,7 @@ export const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({
       console.log("Creating Google Meet with data:", requestData);
 
       const response = await fetch(
-        "http://localhost:8000/api/event/create-google-meet",
+        `${process.env.NEXT_PUBLIC_API_URL || "https://iman-production.up.railway.app"}/api/event/create-google-meet`,
         {
           method: "POST",
           headers: {

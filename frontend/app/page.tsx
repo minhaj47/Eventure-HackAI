@@ -73,7 +73,7 @@ export default function Eventure() {
       console.log('=== REFRESHING EVENT DATA ===');
       console.log('Event ID:', eventId);
       
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://iman-production.up.railway.app";
       const response = await fetch(`${API_BASE_URL}/api/event/${eventId}`, {
         method: "GET",
         credentials: "include",
