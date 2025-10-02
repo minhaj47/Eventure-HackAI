@@ -45,6 +45,11 @@ const tomorrow = Tomorrow({
 export const metadata: Metadata = {
   title: "EVENTURE - AI Event Manager",
   description: "Intelligent automation for seamless event creation, promotion & engagement",
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
