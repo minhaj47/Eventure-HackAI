@@ -11,6 +11,8 @@ export const AuthButton = () => {
     );
   }
 
+  // just a comment
+
   if (isAuthenticated && user) {
     return (
       <div className="flex items-center gap-4">
