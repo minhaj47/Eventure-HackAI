@@ -1,6 +1,16 @@
-# AI Event Manager - Modular Architecture
+# Eventure-HackAI Frontend Architecture 🏗️
 
-This project has been refactored to use a modular component architecture for better maintainability, reusability, and code organization.
+**Next.js 15.5.3 Modular Architecture** - Comprehensive documentation of the frontend system design with SmythOS AI integration, toast notifications, and modern React patterns.
+
+## 🎯 Architecture Overview
+
+The Eventure-HackAI frontend is built using modern React patterns with:
+- **Framework**: Next.js 15.5.3 with App Router and Turbopack
+- **Language**: TypeScript 5+ with strict mode for enhanced type safety
+- **Styling**: Tailwind CSS v4 with PostCSS for modern responsive design
+- **State Management**: React 19.1.0 hooks with custom context providers
+- **Authentication**: NextAuth.js v4.24.11 with Google OAuth integration
+- **UI System**: Custom toast notifications and reusable component library
 
 ## Project Structure
 

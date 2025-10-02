@@ -1,8 +1,15 @@
-# Frontend-Backend Integration Setup Guide
+# Eventure-HackAI Integration Guide 🔗
 
-## Overview
+**Complete Integration Documentation** for frontend-backend communication, SmythOS AI orchestration, and Google services connectivity in the Eventure-HackAI platform.
 
-Your Event Manager application now has complete frontend-backend integration with SmythOS AI APIs for email generation.
+## 🌟 Integration Overview
+
+The Eventure-HackAI application features comprehensive integration between:
+- **Frontend**: Next.js 15.5.3 with React 19.1.0 and TypeScript
+- **Backend**: Express.js 5.1.0 API with MongoDB database
+- **AI Platform**: SmythOS AI agents for intelligent automation
+- **Google Services**: Classroom, Forms, Meet, and Sheets APIs
+- **Authentication**: NextAuth.js with Google OAuth integration
 
 ## What Was Implemented
 

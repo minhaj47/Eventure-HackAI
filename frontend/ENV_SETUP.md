@@ -1,21 +1,39 @@
-# Frontend Environment Setup
+# Frontend Environment Setup 🔧
 
-## Required Environment Variables
+**Next.js 15.5.3 Configuration Guide** - Complete environment setup for the Eventure-HackAI frontend with NextAuth.js, Google OAuth, and SmythOS integration.
 
-Create a `.env.local` file in the frontend directory with the following variables:
+## 📋 Required Environment Variables
+
+Create a `.env.local` file in the **frontend** directory with the following variables:
 
 ```bash
-# NextAuth Configuration
+# NextAuth.js v4.24.11 Configuration
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret-key-here
+NEXTAUTH_SECRET=your-nextauth-secret-key-min-32-chars
 
-# Google OAuth Configuration
-GOOGLE_CLIENT_ID=your-google-oauth-client-id
+# Google OAuth 2.0 Configuration
+GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 
 # Backend API Configuration
 NEXT_PUBLIC_API_URL=http://localhost:5000
+
+# Production Configuration (for deployment)
+# NEXTAUTH_URL=https://your-frontend-domain.com
+# NEXT_PUBLIC_API_URL=https://your-backend-domain.com
 ```
+
+## 🛠️ Development vs Production Configuration
+
+### Development Environment
+- **Frontend**: `http://localhost:3000` (Next.js dev server with Turbopack)
+- **Backend**: `http://localhost:5000` (Express.js with nodemon)
+- **Database**: Local MongoDB or MongoDB Atlas
+
+### Production Environment  
+- **Frontend**: Your Vercel/Netlify domain
+- **Backend**: Your Railway/Render/AWS domain
+- **Database**: MongoDB Atlas (recommended)
 
 ## How to Get Google OAuth Credentials
 

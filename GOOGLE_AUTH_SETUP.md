@@ -1,8 +1,15 @@
-# Google Authentication Setup Guide
+# Google Authentication Setup Guide 🔐
 
-## Overview
+**Complete Authentication System** - Comprehensive guide for setting up Google OAuth integration with NextAuth.js v4.24.11, JWT backend authentication, and SmythOS-powered user management.
 
-Your authentication system has been updated to support Google OAuth through NextAuth.js on the frontend and a custom JWT-based backend. The system now stores user IDs and can handle both local authentication and Google OAuth.
+## 🌟 Authentication Architecture Overview
+
+The Eventure-HackAI platform features a robust dual authentication system:
+- **Frontend**: NextAuth.js v4.24.11 with Google OAuth provider
+- **Backend**: Express.js 5.1.0 with JWT + bcryptjs authentication  
+- **Database**: MongoDB user management with Mongoose ODM
+- **Security**: bcryptjs 3.0.2 password hashing with JWT tokens
+- **Integration**: Seamless Google services connectivity for enhanced features
 
 ## Backend Changes Made
 

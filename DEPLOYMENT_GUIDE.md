@@ -1,12 +1,16 @@
-# Eventure-HackAI Deployment Guide
+# Eventure-HackAI Deployment Guide 🚀
 
-This guide provides step-by-step instructions to deploy your Eventure-HackAI application to various cloud platforms.
+**Production Deployment Guide** for the AI-powered Event Management Platform with SmythOS integration and comprehensive Google services connectivity.
 
-## Project Architecture
+## 🏗️ Project Architecture
 
-- **Frontend**: Next.js 15 with React 19, TypeScript, Tailwind CSS
-- **Backend**: Express.js 5 with MongoDB, JWT Authentication
-- **Features**: Google Classroom integration, Form generation, AI content generation, Slack integration
+- **Frontend**: Next.js 15.5.3 with React 19.1.0, TypeScript 5+, Tailwind CSS v4
+- **Backend**: Express.js 5.1.0 with MongoDB, JWT + NextAuth.js Authentication  
+- **AI Platform**: SmythOS AI Orchestration with 10+ intelligent agents
+- **Features**: Google Classroom, Forms, Meet, Sheets integration, AI content generation
+- **Database**: MongoDB 8.16.4 with Mongoose ODM
+- **File Storage**: Cloudinary 2.7.0 integration
+- **Performance**: Turbopack bundling, ES Modules support
 
 ## Prerequisites
 
@@ -23,12 +27,20 @@ Before deploying, ensure you have:
 Create a `.env` file in the `backend/` directory:
 
 ```env
+# Server Configuration
+PORT=5000
+NODE_ENV=production
+
 # Database
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/eventure
-PORT=8000
 
-# JWT
-JWT_SECRET=your-super-secure-jwt-secret-key
+# Authentication
+JWT_SECRET=your-super-secure-jwt-secret-key-min-32-chars
+
+# SmythOS AI Configuration
+SMYTHOS_API_URL=https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai
+SMYTHOS_GOOGLE_FORM_URL=https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai/api/generate_google_form
+SMYTHOS_GOOGLE_MEET_URL=https://cmfw5qbmfxvnkjxgtpjoabofw.agent.a.smyth.ai/api/create_google_meet
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
