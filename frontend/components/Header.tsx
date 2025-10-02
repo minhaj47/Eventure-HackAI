@@ -1,5 +1,6 @@
 import { LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import Image from "next/image";
 import React from "react";
 
 interface HeaderProps {
@@ -16,10 +17,12 @@ export const Header: React.FC<HeaderProps> = ({ onCreateEvent }) => {
         {session && (
           <div className="absolute top-4 right-6 flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <img
+              <Image
                 src={session.user?.image || ""}
                 alt={session.user?.name || ""}
-                className="h-10 w-10 rounded-full border border-white/20"
+                width={40}
+                height={40}
+                className="rounded-full border border-white/20"
               />
               <button
                 onClick={() => signOut()}

@@ -46,9 +46,9 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
         eventType: eventData.eventType,
         description: eventData.description,
       });
-      
+
       console.log("API Response:", response);
-      
+
       // Handle the SmythOS agent response format - extract the Output object
       if (response?.result?.Output) {
         setApiPosters(response.result.Output);
@@ -56,7 +56,6 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
       } else {
         throw new Error("Invalid response format");
       }
-      
     } catch (error) {
       console.error("Failed to load AI posters:", error);
       setPosterError("Failed to generate AI posters. Please try again.");
@@ -84,10 +83,10 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
   const downloadImage = async (imageUrl: string, filename: string) => {
     try {
       const response = await fetch(imageUrl);
-      console.log("Response:", response); 
+      console.log("Response:", response);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = filename;
       document.body.appendChild(link);
@@ -95,7 +94,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to download image:', error);
+      console.error("Failed to download image:", error);
     }
   };
 
@@ -107,15 +106,15 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
           url: imageUrl,
         });
       } catch (error) {
-        console.error('Failed to share:', error);
+        console.error("Failed to share:", error);
       }
     } else {
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(imageUrl);
-        alert('Image URL copied to clipboard!');
+        alert("Image URL copied to clipboard!");
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        console.error("Failed to copy to clipboard:", error);
       }
     }
   };
@@ -145,18 +144,6 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
         </div>
       )}
 
-      {/* Generate Posters Button */}
-      {!apiPosters && !isLoadingPoster && (
-        <div className="mb-6 text-center">
-          <Button
-            onClick={loadPosters}
-            loading={isLoadingPoster}
-            label="Generate AI Posters"
-            variant="outline"
-          />
-        </div>
-      )}
-
       {/* AI-Generated Posters Display */}
       {apiPosters && !isLoadingPoster && (
         <div className="mb-6">
@@ -172,26 +159,34 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
               Refresh
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {apiPosters.poster1 && (
               <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
                 <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
-                  <img 
-                    src={apiPosters.poster1} 
-                    alt="AI Generated Poster 1" 
+                  <img
+                    src={apiPosters.poster1}
+                    alt="AI Generated Poster 1"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMTwvdGV4dD48L3N2Zz4=';
+                      target.src =
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMTwvdGV4dD48L3N2Zz4=";
                     }}
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300">Professional Style</span>
+                  <span className="text-sm text-gray-300">
+                    Professional Style
+                  </span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => downloadImage(apiPosters.poster1, `${eventData.name}-poster-1.jpg`)}
+                      onClick={() =>
+                        downloadImage(
+                          apiPosters.poster1,
+                          `${eventData.name}-poster-1.jpg`
+                        )
+                      }
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Download className="h-4 w-4 text-white" />
@@ -210,13 +205,14 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
             {apiPosters.poster2 && (
               <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
                 <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
-                  <img 
-                    src={apiPosters.poster2} 
-                    alt="AI Generated Poster 2" 
+                  <img
+                    src={apiPosters.poster2}
+                    alt="AI Generated Poster 2"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMjwvdGV4dD48L3N2Zz4=';
+                      target.src =
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMjwvdGV4dD48L3N2Zz4=";
                     }}
                   />
                 </div>
@@ -224,7 +220,12 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <span className="text-sm text-gray-300">Modern Style</span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => downloadImage(apiPosters.poster2, `${eventData.name}-poster-2.jpg`)}
+                      onClick={() =>
+                        downloadImage(
+                          apiPosters.poster2,
+                          `${eventData.name}-poster-2.jpg`
+                        )
+                      }
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Download className="h-4 w-4 text-white" />
@@ -243,13 +244,14 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
             {apiPosters.poster3 && (
               <div className="bg-gray-950/40 rounded-xl p-4 border border-white/20">
                 <div className="aspect-square mb-4 rounded-lg overflow-hidden bg-gray-800">
-                  <img 
-                    src={apiPosters.poster3} 
+                  <img
+                    src={apiPosters.poster3}
                     alt="AI Generated Poster 3"
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMzwvdGV4dD48L3N2Zz4=';
+                      target.src =
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMzwvdGV4dD48L3N2Zz4=";
                     }}
                   />
                 </div>
@@ -257,7 +259,12 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <span className="text-sm text-gray-300">Creative Style</span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => downloadImage(apiPosters.poster3, `${eventData.name}-poster-3.jpg`)}
+                      onClick={() =>
+                        downloadImage(
+                          apiPosters.poster3,
+                          `${eventData.name}-poster-3.jpg`
+                        )
+                      }
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Download className="h-4 w-4 text-white" />
@@ -282,8 +289,8 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
           <div className="bg-gray-950/40 rounded-xl p-6 border border-white/20 mb-6">
             <div className="text-center">
               <p className="text-white/80 text-lg mb-8 font-light">
-                Generate professional banners with comprehensive AI-powered design
-                options:
+                Generate professional banners with comprehensive AI-powered
+                design options:
                 <br />
                 <span className="text-sm text-white/70">
                   Size • Type • Style • Colors • Layout • Imagery
@@ -326,13 +333,13 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
 
               {/* Add other configuration options as needed */}
             </div>
-            
+
             {generatedBanners.length === 0 && (
               <div className="flex justify-center pt-10 pb-4">
                 <Button
                   onClick={loadPosters}
                   loading={isGeneratingBanner}
-                  label="Generate Local Banners"
+                  label="Generate Banners"
                   variant="outline"
                 />
               </div>
