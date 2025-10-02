@@ -2,12 +2,48 @@ import React, { useState } from "react";
 import { useGoogleFormGeneration } from "../services/googleFormApi";
 import { Button } from "./ui/Button";
 
+interface FormDetails {
+  formTitle?: string;
+  formUrl: string;
+  editFormUrl: string;
+  instructions: string;
+  formId: string;
+}
+
+interface GoogleFormResponse {
+  success: boolean;
+  data: FormDetails;
+}
+
+interface APIOutput {
+  formDetails: FormDetails;
+}
+
+interface FormGenerationResult {
+  name: string;
+  result: {
+    Output: APIOutput;
+  };
+}
+
+interface GeneratedFormState {
+  success: boolean;
+  data: FormGenerationResult[];
+  isExisting?: boolean;
+}
+
 interface GoogleFormGeneratorProps {
   eventId?: string;
   eventName?: string;
   existingFormUrl?: string;
   existingEditUrl?: string;
-  onFormGenerated?: (formData: { formTitle: string; formUrl: string; editFormUrl: string; formId: string; instructions: string; }) => void;
+  onFormGenerated?: (formData: {
+    formTitle: string;
+    formUrl: string;
+    editFormUrl: string;
+    formId: string;
+    instructions: string;
+  }) => void;
 }
 
 export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
@@ -22,7 +58,9 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
   );
   const [formDescription, setFormDescription] = useState("");
   const [editorEmail, setEditorEmail] = useState("");
-  const [generatedForm, setGeneratedForm] = useState<{ success: boolean; data: any[]; isExisting?: boolean; } | null>(null);
+  const [generatedForm, setGeneratedForm] = useState<GeneratedFormState | null>(
+    null
+  );
   const { generateForm, generateEventForm, isLoading, error } =
     useGoogleFormGeneration();
 
@@ -33,7 +71,7 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
     e.preventDefault();
 
     try {
-      let result;
+      let result: GoogleFormResponse;
       console.log(eventId);
       if (eventId) {
         console.log("Generating event form");
@@ -50,8 +88,31 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
         });
       }
       console.log("API Result:", result);
-      setGeneratedForm(result);
-      onFormGenerated?.(result);
+
+      const formattedResult: GeneratedFormState = {
+        success: result.success,
+        data: [
+          {
+            name: "APIOutput",
+            result: {
+              Output: {
+                formDetails: result.data,
+              },
+            },
+          },
+        ],
+      };
+
+      setGeneratedForm(formattedResult);
+      const formDataForCallback = {
+        ...result.data,
+        formTitle:
+          result.data.formTitle ||
+          (eventName
+            ? `${eventName} - Registration Form`
+            : "Registration Form"),
+      };
+      onFormGenerated?.(formDataForCallback);
     } catch (err) {
       console.error("Form generation failed:", err);
     }
@@ -61,45 +122,56 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
   if (hasExistingForm || generatedForm?.success) {
     // Extract form data from the correct structure
     let formData;
-    
+
     if (generatedForm?.success && generatedForm.data?.length > 0) {
       // Find the APIOutput result in the data array
-      const outputResult = generatedForm.data.find((item: { name: string; result?: any }) => 
-        item.name === "APIOutput"
+      const outputResult = generatedForm.data.find(
+        (item: FormGenerationResult) => item.name === "APIOutput"
       );
-      
+
       console.log("Output Result:", outputResult);
       console.log("Result structure:", outputResult?.result);
       console.log("Output structure:", outputResult?.result?.Output);
-      console.log("FormDetails structure:", outputResult?.result?.Output?.formDetails);
-      
+      console.log(
+        "FormDetails structure:",
+        outputResult?.result?.Output?.formDetails
+      );
+
       if (outputResult?.result?.Output?.formDetails) {
         // The form details are nested in result.Output.formDetails
         const formDetails = outputResult.result.Output.formDetails;
         formData = {
-          formTitle: formDetails.formTitle || (eventName ? `${eventName} - Registration Form` : "Registration Form"),
+          formTitle:
+            formDetails.formTitle ||
+            (eventName
+              ? `${eventName} - Registration Form`
+              : "Registration Form"),
           formUrl: formDetails.formUrl,
           editFormUrl: formDetails.editFormUrl,
           instructions: formDetails.instructions,
           formId: formDetails.formId,
         };
-        
+
         console.log("Extracted form data:", formData);
       } else if (outputResult?.result) {
         // Fallback: try to access directly from result
-        const result = outputResult.result;
+        const result = outputResult.result.Output;
         formData = {
-          formTitle: result.formTitle || (eventName ? `${eventName} - Registration Form` : "Registration Form"),
-          formUrl: result.formUrl,
-          editFormUrl: result.editFormUrl,
-          instructions: result.instructions,
-          formId: result.formId,
+          formTitle:
+            result.formDetails.formTitle ||
+            (eventName
+              ? `${eventName} - Registration Form`
+              : "Registration Form"),
+          formUrl: result.formDetails.formUrl,
+          editFormUrl: result.formDetails.editFormUrl,
+          instructions: result.formDetails.instructions,
+          formId: result.formDetails.formId,
         };
-        
+
         console.log("Extracted form data (fallback):", formData);
       }
     }
-    
+
     // Fallback to existing form data if no generated form
     if (!formData) {
       formData = {
@@ -225,15 +297,24 @@ export const GoogleFormGenerator: React.FC<GoogleFormGeneratorProps> = ({
             <div className="flex items-start space-x-3">
               <span className="text-red-400 text-lg">⚠️</span>
               <div className="flex-1">
-                <h4 className="text-red-300 font-medium mb-2">Form Generation Failed</h4>
+                <h4 className="text-red-300 font-medium mb-2">
+                  Form Generation Failed
+                </h4>
                 <p className="text-red-200 text-sm mb-3">{error}</p>
-                {(error.includes('timeout') || error.includes('unavailable') || error.includes('connection')) && (
+                {(error.includes("timeout") ||
+                  error.includes("unavailable") ||
+                  error.includes("connection")) && (
                   <div className="space-y-2">
                     <p className="text-red-200 text-xs">
-                      This is usually a temporary issue. The external form service may be busy.
+                      This is usually a temporary issue. The external form
+                      service may be busy.
                     </p>
                     <button
-                      onClick={() => handleGenerateForm({ preventDefault: () => {} } as React.FormEvent)}
+                      onClick={() =>
+                        handleGenerateForm({
+                          preventDefault: () => {},
+                        } as React.FormEvent)
+                      }
                       className="px-3 py-1 bg-red-600 hover:bg-red-500 text-white rounded-md text-sm font-medium transition-colors"
                     >
                       Try Again

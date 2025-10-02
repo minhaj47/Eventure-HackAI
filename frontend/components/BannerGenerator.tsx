@@ -4,6 +4,12 @@ import { generateEventPosters } from "../services/contentGenerationApi";
 import { Banner, BannerConfig, LegacyEventData } from "../types";
 import { ActionButton, Button, Card } from "./ui";
 
+interface ApiPosterResponse {
+  poster1?: string;
+  poster2?: string;
+  poster3?: string;
+}
+
 interface BannerGeneratorProps {
   eventData: LegacyEventData;
   generatedBanners: Banner[];
@@ -32,8 +38,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
   const [refreshingBanner, setRefreshingBanner] = useState<number | null>(null);
   const [isLoadingPoster, setIsLoadingPoster] = useState(false);
   const [posterError, setPosterError] = useState<string | null>(null);
-  const [apiPosters, setApiPosters] = useState<any>(null);
-
+  const [apiPosters, setApiPosters] = useState<ApiPosterResponse | null>(null);
   const loadPosters = async () => {
     setIsLoadingPoster(true);
     setPosterError(null);
@@ -182,6 +187,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <div className="flex gap-2">
                     <button
                       onClick={() =>
+                        apiPosters?.poster1 &&
                         downloadImage(
                           apiPosters.poster1,
                           `${eventData.name}-poster-1.jpg`
@@ -192,7 +198,9 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                       <Download className="h-4 w-4 text-white" />
                     </button>
                     <button
-                      onClick={() => shareImage(apiPosters.poster1)}
+                      onClick={() =>
+                        apiPosters?.poster1 && shareImage(apiPosters.poster1)
+                      }
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Share2 className="h-4 w-4 text-white" />
@@ -212,7 +220,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src =
-                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMjwvdGV4dD48L3N2Zz4=";
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1zbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMjwvdGV4dD48L3N2Zz4=";
                     }}
                   />
                 </div>
@@ -221,6 +229,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <div className="flex gap-2">
                     <button
                       onClick={() =>
+                        apiPosters?.poster2 &&
                         downloadImage(
                           apiPosters.poster2,
                           `${eventData.name}-poster-2.jpg`
@@ -231,7 +240,9 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                       <Download className="h-4 w-4 text-white" />
                     </button>
                     <button
-                      onClick={() => shareImage(apiPosters.poster2)}
+                      onClick={() =>
+                        apiPosters?.poster2 && shareImage(apiPosters.poster2)
+                      }
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Share2 className="h-4 w-4 text-white" />
@@ -251,7 +262,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src =
-                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMzwvdGV4dD48L3N2Zz4=";
+                        "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1zbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDc0NzQ3Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5Qb3N0ZXIgMzwvdGV4dD48L3N2Zz4=";
                     }}
                   />
                 </div>
@@ -260,6 +271,7 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                   <div className="flex gap-2">
                     <button
                       onClick={() =>
+                        apiPosters?.poster3 &&
                         downloadImage(
                           apiPosters.poster3,
                           `${eventData.name}-poster-3.jpg`
@@ -270,7 +282,9 @@ export const BannerGenerator: React.FC<BannerGeneratorProps> = ({
                       <Download className="h-4 w-4 text-white" />
                     </button>
                     <button
-                      onClick={() => shareImage(apiPosters.poster3)}
+                      onClick={() =>
+                        apiPosters?.poster3 && shareImage(apiPosters.poster3)
+                      }
                       className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
                     >
                       <Share2 className="h-4 w-4 text-white" />
