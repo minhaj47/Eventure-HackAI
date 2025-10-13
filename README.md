@@ -1,6 +1,6 @@
 # Eventure-HackAI 🎉
 
-**AI-Powered Event Management Platform** - A comprehensive solution for event creation, management, and automation with Google Classroom integration, SmythOS AI capabilities, and automated notification systems.
+**Event handling AI tools orchestrator** - A comprehensive solution for content creation, management, and automation with Google Classroom integration, SmythOS AI capabilities, and automated notification systems.
 
 ![Project Banner](https://img.shields.io/badge/Eventure--HackAI-AI%20Event%20Management-blue?style=for-the-badge)
 
